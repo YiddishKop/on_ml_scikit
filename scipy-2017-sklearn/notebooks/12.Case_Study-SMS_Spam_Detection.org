@@ -1,0 +1,375 @@
+#+TITLE: Case Study - Text classification for SMS spam detection
+
+* Case Study - Text classification for SMS spam detection
+
+
+  #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+%matplotlib inline
+import matplotlib.pyplot as plt
+import numpy as np
+
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[79]:
+  :END:
+
+* Case Study - Text classification for SMS spam detection
+We first load the text data from the dataset directory that should be located in
+your notebooks directory, which we created by running the fetch_data.py script
+from the top level of the GitHub repository.
+
+Furthermore, we perform some simple preprocessing and split the data array into
+two parts:
+
+1. text: A list of lists, where each sublists contains the contents of our
+   emails
+2. y: our SPAM vs HAM labels stored in binary; a 1 represents a spam message,
+   and a 0 represnts a ham (non-spam) message.
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+import os
+with open(os.path.join("datasets", "smsspam", "SMSSpamCollection")) as f:
+    lines = [line.strip().split("\t") for line in f.readlines()]
+text = [x[1] for x in lines]
+y = [int(x[0] == "spam") for x in lines]
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[80]:
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+text[:10]
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[81]:
+   #+BEGIN_EXAMPLE
+     ['Go until jurong point, crazy.. Available only in bugis n great world la e buffet... Cine there got amore wat...',
+     'Ok lar... Joking wif u oni...',
+     "Free entry in 2 a wkly comp to win FA Cup final tkts 21st May 2005. Text FA to 87121 to receive entry question(std txt rate)T&C's apply 08452810075over18's",
+     'U dun say so early hor... U c already then say...',
+     "Nah I don't think he goes to usf, he lives around here though",
+     "FreeMsg Hey there darling it's been 3 week's now and no word back! I'd like some fun you up for it still? Tb ok! XxX std chgs to send, $1.50 to rcv",
+     'Even my brother is not like to speak with me. They treat me like aids patent.',
+     "As per your request 'Melle Melle (Oru Minnaminunginte Nurungu Vettam)' has been set as your callertune for all Callers. Press *9 to copy your friends Callertune",
+     'WINNER!! As a valued network customer you have been selected to receivea $900 prize reward! To claim call 09061701461. Claim code KL341. Valid 12 hours only.',
+     'Had your mobile 11 months or more? U R entitled to Update to the latest colour mobiles with camera for Free! Call The Mobile Update Co FREE on 08002986030']
+   #+END_EXAMPLE
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+y[:10]
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[82]:
+   : [0, 0, 1, 0, 0, 1, 0, 0, 1, 1]
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print('Number of ham and spam messages:', np.bincount(y))
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[83]:
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+type(text)
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[84]:
+   : list
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+type(y)
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[85]:
+   : list
+   :END:
+
+Next, we split our dataset into 2 parts, the test and training dataset:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.model_selection import train_test_split
+text_train, text_test, y_train, y_test = train_test_split(text, y,
+                                                          random_state=42,
+                                                          test_size=0.25,
+                                                          stratify=y)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[86]:
+:END:
+
+Now, we use the CountVectorizer to parse the text data into a bag-of-words
+model.
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.feature_extraction.text import CountVectorizer
+print('CountVectorizer defaults')
+CountVectorizer()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[87]:
+#+BEGIN_EXAMPLE
+  CountVectorizer(analyzer='word', binary=False, decode_error='strict',
+  dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
+  lowercase=True, max_df=1.0, max_features=None, min_df=1,
+  ngram_range=(1, 1), preprocessor=None, stop_words=None,
+  strip_accents=None, token_pattern='(?u)\\b\\w\\w+\\b',
+  tokenizer=None, vocabulary=None)
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+vectorizer = CountVectorizer()
+vectorizer.fit(text_train)
+X_train = vectorizer.transform(text_train)
+X_test = vectorizer.transform(text_test)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[88]:
+:END:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print(len(vectorizer.vocabulary_))
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[89]:
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+X_train.shape
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[90]:
+: (4180, 7453)
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print(vectorizer.get_feature_names()[:20])
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[91]:
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print(vectorizer.get_feature_names()[2000:2020])
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[92]:
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print(X_train.shape)
+print(X_test.shape)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[93]:
+:END:
+
+** Training a Classifier on Text Features
+We can now train a classifier, for instance a logistic regression classifier,
+which is a fast baseline for text classification tasks:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.linear_model import LogisticRegression
+clf = LogisticRegression()
+clf
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[94]:
+#+BEGIN_EXAMPLE
+  LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+  intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1,
+  penalty='l2', random_state=None, solver='liblinear', tol=0.0001,
+  verbose=0, warm_start=False)
+#+END_EXAMPLE
+:END:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+clf.fit(X_train, y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[95]:
+#+BEGIN_EXAMPLE
+  LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
+  intercept_scaling=1, max_iter=100, multi_class='ovr', n_jobs=1,
+  penalty='l2', random_state=None, solver='liblinear', tol=0.0001,
+  verbose=0, warm_start=False)
+#+END_EXAMPLE
+:END:
+
+We can now evaluate the classifier on the testing set. Let's first use the
+built-in score function, which is the rate of correct classification in the test
+set:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+clf.score(X_test, y_test)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[96]:
+: 0.9849354375896701
+:END:
+
+We can also compute the score on the training set to see how well we do there:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+clf.score(X_train, y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[97]:
+: 0.9983253588516746
+:END:
+
+** Visualizing important features
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+def visualize_coefficients(classifier, feature_names, n_top_features=25):
+    # get coefficients with large absolute values
+    coef = classifier.coef_.ravel()
+    positive_coefficients = np.argsort(coef)[-n_top_features:]
+    negative_coefficients = np.argsort(coef)[:n_top_features]
+    interesting_coefficients = np.hstack([negative_coefficients, positive_coefficients])
+    # plot them
+    plt.figure(figsize=(15, 5))
+    colors = ["red" if c < 0 else "blue" for c in coef[interesting_coefficients]]
+    plt.bar(np.arange(2 * n_top_features), coef[interesting_coefficients], color=colors)
+    feature_names = np.array(feature_names)
+    plt.xticks(np.arange(1, 2 * n_top_features + 1), feature_names[interesting_coefficients], rotation=60, ha="right");
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[98]:
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+visualize_coefficients(clf, vectorizer.get_feature_names())
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[99]:
+   [[file:./obipy-resources/8573S1q.png]]
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+vectorizer = CountVectorizer(min_df=2)
+vectorizer.fit(text_train)
+X_train = vectorizer.transform(text_train)
+X_test = vectorizer.transform(text_test)
+clf = LogisticRegression()
+clf.fit(X_train, y_train)
+print(clf.score(X_train, y_train))
+print(clf.score(X_test, y_test))
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[100]:
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+len(vectorizer.get_feature_names())
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[101]:
+   : 3439
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print(vectorizer.get_feature_names()[:20])
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[102]:
+   :END:
+
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+visualize_coefficients(clf, vectorizer.get_feature_names())
+
+   #+END_SRC
+
+   #+RESULTS:
+   :RESULTS:
+   # Out[103]:
+   [[file:./obipy-resources/8573f_w.png]]
+   :END:
+
+<img src="figures/supervised_scikit_learn.png" width="100%">
+
+EXERCISE: Use TfidfVectorizer instead of CountVectorizer. Are the results
+better? How are the coefficients different? Change the parameters min_df and
+ngram_range of the TfidfVectorizer and CountVectorizer. How does that change the
+important features?
+
+# %load solutions/12A_tfidf.py
+
+# %load solutions/12B_vectorizer_params.py

@@ -1,0 +1,564 @@
+#+TITLE: Out-of-core Learning - Large scale Text Classification for sentiment Analysis
+
+
+* Scalability Issues
+The sklearn.feature_extraction.text.CountVectorizer and
+sklearn.feature_extraction.text.TfidfVectorizer classes suffer from a number of
+scalability issues that all stem from the internal usage of the vocabulary_
+attribute (a Python dictionary) used to map the unicode string feature names to
+the integer feature indices.
+
+The main scalability issues are:
+
+  - *Memory usage of the text vectorizer*: all the string representations of the features are loaded in memory
+  - *Parallelization problems for text feature extraction*: the vocabulary_ would be a shared state: complex synchronization and overhead
+  - *Impossibility to do online or out-of-core / streaming learning*: the vocabulary_ needs to be learned from the data: its size cannot be known before making one pass over the full dataset
+
+  To better understand the issue let's have a look at how the vocabulary_
+  attribute work. At fit time the tokens of the corpus are uniquely indentified
+  by a integer index and this mapping stored in the vocabulary:
+
+
+  #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.feature_extraction.text import CountVectorizer
+vectorizer = CountVectorizer(min_df=1)
+vectorizer.fit([
+    "The cat sat on the mat.",
+])
+vectorizer.vocabulary_
+
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[260]:
+  : {'cat': 0, 'mat': 1, 'on': 2, 'sat': 3, 'the': 4}
+  :END:
+
+  The vocabulary is used at transform time to build the occurrence matrix:
+
+
+  #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+X = vectorizer.transform([
+    "The cat sat on the mat.",
+    "This cat is a nice cat.",
+]).toarray()
+print(len(vectorizer.vocabulary_))
+print(vectorizer.get_feature_names())
+print(X)
+
+  #+END_SRC
+
+  #+RESULTS:
+  :RESULTS:
+  # Out[261]:
+  :END:
+
+Let's refit with a slightly larger corpus:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+vectorizer = CountVectorizer(min_df=1)
+vectorizer.fit([
+    "The cat sat on the mat.",
+    "The quick brown fox jumps over the lazy dog.",
+])
+vectorizer.vocabulary_
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[262]:
+#+BEGIN_EXAMPLE
+  {'brown': 0,
+  'cat': 1,
+  'dog': 2,
+  'fox': 3,
+  'jumps': 4,
+  'lazy': 5,
+  'mat': 6,
+  'on': 7,
+  'over': 8,
+  'quick': 9,
+  'sat': 10,
+  'the': 11}
+#+END_EXAMPLE
+:END:
+
+The vocabulary_ is the (logarithmically) growing with the size of the training
+corpus. Note that we could not have built the vocabularies in parallel on the 2
+text documents as they share some words hence would require some kind of shared
+datastructure or synchronization barrier which is complicated to setup,
+especially if we want to distribute the processing on a cluster.
+
+With this new vocabulary, the dimensionality of the output space is now larger:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+X = vectorizer.transform([
+    "The cat sat on the mat.",
+    "This cat is a nice cat.",
+]).toarray()
+print(len(vectorizer.vocabulary_))
+print(vectorizer.get_feature_names())
+print(X)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[263]:
+:END:
+
+* The IMDb movie dataset
+To illustrate the scalability issues of the vocabulary-based vectorizers, let's
+load a more realistic dataset for a classical text classification task:
+sentiment analysis on text documents. The goal is to tell apart negative from
+positive movie reviews from the Internet Movie Database (IMDb).
+
+In the following sections, with a large subset of movie reviews from the IMDb
+that has been collected by Maas et al.
+
+A. L. Maas, R. E. Daly, P. T. Pham, D. Huang, A. Y. Ng, and C. Potts. Learning
+Word Vectors for Sentiment Analysis. In the proceedings of the 49th Annual
+Meeting of the Association for Computational Linguistics: Human Language
+Technologies, pages 142–150, Portland, Oregon, USA, June 2011. Association for
+Computational Linguistics. This dataset contains 50,000 movie reviews, which
+were split into 25,000 training samples and 25,000 test samples. The reviews are
+labeled as either negative (neg) or positive (pos). Moreover, positive means
+that a movie received >6 stars on IMDb; negative means that a movie received <5
+stars, respectively.
+
+Assuming that the ../fetch_data.py script was run successfully the following
+files should be available:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+import os
+train_path = os.path.join('datasets', 'IMDb', 'aclImdb', 'train')
+test_path = os.path.join('datasets', 'IMDb', 'aclImdb', 'test')
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[264]:
+:END:
+
+Now, let's load them into our active session via scikit-learn's load_files
+function
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.datasets import load_files
+train = load_files(container_path=(train_path),
+                   categories=['pos', 'neg'])
+test = load_files(container_path=(test_path),
+                  categories=['pos', 'neg'])
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[265]:
+:END:
+
+NOTE: Since the movie datasets consists of 50,000 individual text files,
+executing the code snippet above may take ~20 sec or longer. The load_files
+function loaded the datasets into sklearn.datasets.base.Bunch objects, which are
+Python dictionaries:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+train.keys()
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[266]:
+: dict_keys(['data', 'filenames', 'target_names', 'target', 'DESCR'])
+:END:
+
+In particular, we are only interested in the data and target arrays.
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+import numpy as np
+for label, data in zip(('TRAINING', 'TEST'), (train, test)):
+    print('\n\n%s' % label)
+    print('Number of documents:', len(data['data']))
+    print('\n1st document:\n', data['data'][0])
+    print('\n1st label:', data['target'][0])
+    print('\nClass names:', data['target_names'])
+    print('Class count:',
+          np.unique(data['target']), ' -> ',
+          np.bincount(data['target']))
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[267]:
+:END:
+
+As we can see above the 'target' array consists of integers 0 and 1, where 0
+stands for negative and 1 stands for positive.
+
+* The Hashing Trick
+
+Remember the bag of word representation using a vocabulary based vectorizer:
+​
+file:figures/bag_of_words.png
+
+
+To workaround the limitations of the vocabulary-based vectorizers, one can use
+the hashing trick. Instead of building and storing an explicit mapping from the
+feature names to the feature indices in a Python dict, we can just use a hash
+function and a modulus operation:
+
+
+file:figures/hashing_vectorizer.png
+
+More info and reference for the original papers on the Hashing Trick in the
+following site as well as a description specific to language here.
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.utils.murmurhash import murmurhash3_bytes_u32
+# encode for python 3 compatibility
+for word in "the cat sat on the mat".encode("utf-8").split():
+    print("{0} => {1}".format(
+        word, murmurhash3_bytes_u32(word, 0) % 2 ** 20))
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[268]:
+:END:
+
+This mapping is completely stateless and the dimensionality of the output space
+is explicitly fixed in advance (here we use a modulo 2 ** 20 which means roughly
+1M dimensions). The makes it possible to workaround the limitations of the
+vocabulary based vectorizer both for parallelizability and online / out-of-core
+learning.
+
+The HashingVectorizer class is an alternative to the CountVectorizer (or
+TfidfVectorizer class with use_idf=False) that internally uses the murmurhash
+hash function:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.feature_extraction.text import HashingVectorizer
+h_vectorizer = HashingVectorizer(encoding='latin-1')
+h_vectorizer
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[269]:
+#+BEGIN_EXAMPLE
+  HashingVectorizer(alternate_sign=True, analyzer='word', binary=False,
+  decode_error='strict', dtype=<class 'numpy.float64'>,
+  encoding='latin-1', input='content', lowercase=True,
+  n_features=1048576, ngram_range=(1, 1), non_negative=False,
+  norm='l2', preprocessor=None, stop_words=None, strip_accents=None,
+  token_pattern='(?u)\\b\\w\\w+\\b', tokenizer=None)
+#+END_EXAMPLE
+:END:
+
+It shares the same "preprocessor", "tokenizer" and "analyzer" infrastructure:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+analyzer = h_vectorizer.build_analyzer()
+analyzer('This is a test sentence.')
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[270]:
+: ['this', 'is', 'test', 'sentence']
+:END:
+
+We can vectorize our datasets into a scipy sparse matrix exactly as we would
+have done with the CountVectorizer or TfidfVectorizer, except that we can
+directly call the transform method: there is no need to fit as HashingVectorizer
+is a stateless transformer:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+docs_train, y_train = train['data'], train['target']
+docs_valid, y_valid = test['data'][:12500], test['target'][:12500]
+docs_test, y_test = test['data'][12500:], test['target'][12500:]
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[271]:
+:END:
+
+The dimension of the output is fixed ahead of time to n_features=2 ** 20 by
+default (nearly 1M features) to minimize the rate of collision on most
+classification problem while having reasonably sized linear models (1M weights
+in the coef_ attribute):
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+h_vectorizer.transform(docs_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[272]:
+#+BEGIN_EXAMPLE
+  <25000x1048576 sparse matrix of type '<class 'numpy.float64'>'
+  with 3446628 stored elements in Compressed Sparse Row format>
+#+END_EXAMPLE
+:END:
+
+Now, let's compare the computational efficiency of the HashingVectorizer to the
+CountVectorizer:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+h_vec = HashingVectorizer(encoding='latin-1')
+%timeit -n 1 -r 3 h_vec.fit(docs_train, y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[273]:
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+count_vec =  CountVectorizer(encoding='latin-1')
+%timeit -n 1 -r 3 count_vec.fit(docs_train, y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[274]:
+:END:
+
+As we can see, the HashingVectorizer is much faster than the Countvectorizer in
+this case.
+
+Finally, let us train a LogisticRegression classifier on the IMDb training
+subset:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import Pipeline
+h_pipeline = Pipeline([
+    ('vec', HashingVectorizer(encoding='latin-1')),
+    ('clf', LogisticRegression(random_state=1)),
+])
+h_pipeline.fit(docs_train, y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[275]:
+#+BEGIN_EXAMPLE
+  Pipeline(memory=None,
+  steps=[('vec', HashingVectorizer(alternate_sign=True, analyzer='word', binary=False,
+  decode_error='strict', dtype=<class 'numpy.float64'>,
+  encoding='latin-1', input='content', lowercase=True,
+  n_features=1048576, ngram_range=(1, 1), non_negative=False,
+  norm='l2', p...nalty='l2', random_state=1, solver='liblinear', tol=0.0001,
+  verbose=0, warm_start=False))])
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+print('Train accuracy', h_pipeline.score(docs_train, y_train))
+print('Validation accuracy', h_pipeline.score(docs_valid, y_valid))
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[276]:
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+import gc
+del count_vec
+del h_pipeline
+gc.collect()
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[277]:
+: 35501
+:END:
+
+* Out-of-Core learning
+Out-of-Core learning is the task of training a machine learning model on a
+dataset that does not fit into memory or RAM. This requires the following
+conditions:
+
+  - a feature extraction layer with fixed output dimensionality
+  - knowing the list of all classes in advance (in this case we only have positive and negative reviews)
+  - a machine learning algorithm that supports incremental learning (the partial_fit method in scikit-learn).
+
+  In the following sections, we will set up a simple batch-training function to
+  train an SGDClassifier iteratively.
+
+But first, let us load the file names into a Python list:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+train_path = os.path.join('datasets', 'IMDb', 'aclImdb', 'train')
+train_pos = os.path.join(train_path, 'pos')
+train_neg = os.path.join(train_path, 'neg')
+fnames = [os.path.join(train_pos, f) for f in os.listdir(train_pos)] +\
+         [os.path.join(train_neg, f) for f in os.listdir(train_neg)]
+fnames[:3]
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[279]:
+#+BEGIN_EXAMPLE
+  ['datasets/IMDb/aclImdb/train/pos/5561_8.txt',
+  'datasets/IMDb/aclImdb/train/pos/8049_7.txt',
+  'datasets/IMDb/aclImdb/train/pos/9072_9.txt']
+#+END_EXAMPLE
+:END:
+
+​
+Next, let us create the target label array:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+y_train = np.zeros((len(fnames), ), dtype=int)
+y_train[:12500] = 1
+np.bincount(y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[280]:
+: array([12500, 12500])
+:END:
+
+Now, we implement the batch_train function as follows:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.base import clone
+def batch_train(clf, fnames, labels, iterations=25, batchsize=1000, random_seed=1):
+    vec = HashingVectorizer(encoding='latin-1')
+    idx = np.arange(labels.shape[0])
+    c_clf = clone(clf)
+    rng = np.random.RandomState(seed=random_seed)
+
+    for i in range(iterations):
+        rnd_idx = rng.choice(idx, size=batchsize)
+        documents = []
+        for i in rnd_idx:
+            with open(fnames[i], 'r', encoding='latin-1') as f:
+                documents.append(f.read())
+        X_batch = vec.transform(documents)
+        batch_labels = labels[rnd_idx]
+        c_clf.partial_fit(X=X_batch,
+                          y=batch_labels,
+                          classes=[0, 1])
+
+    return c_clf
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[281]:
+:END:
+
+Note that we are not using LogisticRegression as in the previous section, but we
+will use a SGDClassifier with a logistic cost function instead. SGD stands for
+stochastic gradient descent, an optimization alrogithm that optimizes the weight
+coefficients iteratively sample by sample, which allows us to feed the data to
+the classifier chunk by chuck.
+
+And we train the SGDClassifier; using the default settings of the batch_train
+function, it will train the classifier on 25*1000=25000 documents. (Depending on
+your machine, this may take >2 min)
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.linear_model import SGDClassifier
+sgd = SGDClassifier(loss='log', random_state=1)
+sgd = batch_train(clf=sgd,
+                  fnames=fnames,
+                  labels=y_train)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[282]:
+:END:
+
+Eventually, let us evaluate its performance:
+
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+vec = HashingVectorizer(encoding='latin-1')
+sgd.score(vec.transform(docs_test), y_test)
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[283]:
+: 0.83176
+:END:
+
+** Limitations of the Hashing Vectorizer
+Using the Hashing Vectorizer makes it possible to implement streaming and
+parallel text classification but can also introduce some issues:
+
+  - The collisions can introduce too much noise in the data and degrade prediction quality,
+  - The HashingVectorizer does not provide "Inverse Document Frequency" reweighting (lack of a use_idf=True option).
+  - There is no easy way to inverse the mapping and find the feature names from the feature index.
+
+
+  The collision issues can be controlled by increasing the n_features
+  parameters.
+
+The IDF weighting might be reintroduced by appending a TfidfTransformer instance
+on the output of the vectorizer. However computing the idf_ statistic used for
+the feature reweighting will require to do at least one additional pass over the
+training set before being able to start training the classifier: this breaks the
+online learning scheme.
+
+The lack of inverse mapping (the get_feature_names() method of TfidfVectorizer)
+is even harder to workaround. That would require extending the HashingVectorizer
+class to add a "trace" mode to record the mapping of the most important features
+to provide statistical debugging information.
+
+In the mean time to debug feature extraction issues, it is recommended to use
+TfidfVectorizer(use_idf=False) on a small-ish subset of the dataset to simulate
+a HashingVectorizer() instance that have the get_feature_names() method and no
+collision issues.
+
+EXERCISE: In our implementation of the batch_train function above, we randomly
+draw k training samples as a batch in each iteration, which can be considered as
+a random subsampling with replacement. Can you modify the batch_train function
+so that it iterates over the documents without replacement, i.e., that it uses
+each document exactly once per iteration?
+
+# %load solutions/23_batchtrain.py

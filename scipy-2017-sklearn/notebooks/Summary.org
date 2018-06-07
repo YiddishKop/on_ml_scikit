@@ -1,0 +1,9 @@
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  from sklearn.datasets import load_iris
+  import numpy as np
+
+  iris = load_iris()
+  print (type(iris)) #<- sklearn.utils.Bunch
+  print (iris) #<- sklearn.utils.Bunch
+
+#+END_SRC
