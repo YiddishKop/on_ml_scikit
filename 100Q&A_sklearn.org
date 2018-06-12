@@ -1,0 +1,148 @@
+#+TITLE: 100 QandA of sklearn
+
+* 100 QandA of sklearn
+** How to Generate Test Datasets in Python with scikit-learn
+- How to generate multi-class classification prediction test problems.
+- How to generate binary classification prediction test problems.
+- How to generate linear regression prediction test problems.
+*** How to generate multi-class classification prediction test problems.
+In this section, we will look at three classification problems: blobs, moons and
+circles.
+**** Blobs Classification Problem
+The ~make_blobs()~ function can be used to generate blobs of points with a
+Gaussian distribution.
+
+You can control how many blobs to generate and the number of samples to
+generate, as well as a host of other properties.
+
+The problem is suitable for linear classification problems given the linearly
+separable nature of the blobs.
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.datasets.samples_generator import make_blobs
+from matplotlib import pyplot
+from pandas import DataFrame
+# generate 2d classification dataset
+X, y = make_blobs(n_samples=100, centers=3, n_features=2)
+# scatter plot, dots colored by class value
+df = DataFrame(dict(x=X[:,0], y=X[:,1], label=y))
+colors = {0:'red', 1:'blue', 2:'green'}
+fig, ax = pyplot.subplots()
+grouped = df.groupby('label')
+for key, group in grouped:
+    group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])
+pyplot.show()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[6]:
+[[file:./obipy-resources/25041zgL.png]]
+:END:
+
+**** Moons Classification Problem
+     #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.datasets import make_moons
+from matplotlib import pyplot
+from pandas import DataFrame
+# generate 2d classification dataset
+X, y = make_moons(n_samples=100, noise=0.1) #<<<<-HERE
+# scatter plot, dots colored by class value
+df = DataFrame(dict(x=X[:,0], y=X[:,1], label=y))
+colors = {0:'red', 1:'blue'}
+fig, ax = pyplot.subplots()
+grouped = df.groupby('label')
+for key, group in grouped:
+    group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])
+pyplot.show()
+     #+END_SRC
+
+**** Circles Classification Problem
+
+     #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+       from sklearn.datasets import make_circles
+       from matplotlib import pyplot
+       from pandas import DataFrame
+
+       # generate 2d classification dataset
+       X, y = make_circles(n_samples=100, noise=0.05) #<<<<-HERE
+       # scatter plot, dots colored by class value
+       ## create a pandas.DataFrame from a dict to store dataset
+       df = DataFrame(dict(x=X[:,0], y=X[:,1], label=y))
+       colors = {0:'red', 1:'blue'}
+       fig, ax = pyplot.subplots()
+       ##
+       grouped = df.groupby('label')
+       print (type(grouped))
+       for key, group in grouped:
+           group.plot(ax=ax, kind='scatter', x='x', y='y', label=key, color=colors[key])
+       pyplot.show()
+
+     #+END_SRC
+
+     #+RESULTS:
+     :RESULTS:
+     # Out[7]:
+     [[file:./obipy-resources/25041ArR.png]]
+     :END:
+
+*** How to generate linear regression prediction test problems.
+Regression is the problem of predicting a quantity given an observation.
+
+The make_regression() function will create a dataset with a linear relationship
+between inputs and the outputs.
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.datasets import make_regression
+from matplotlib import pyplot
+# generate regression dataset
+X, y = make_regression(n_samples=100, n_features=1, noise=0.1)
+# plot regression dataset
+pyplot.scatter(X,y)
+pyplot.show()
+#+END_SRC
+
+
+
+
+
+
+*** How to generate dataset from a curve with some noise
+    you must specify the parameter name --- 'size' when using uniform
+    distribution to generate noise
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      import numpy as np
+      rng = np.random.RandomState(42)
+      noise = rng.uniform(size=20)
+      noise
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[72]:
+    #+BEGIN_EXAMPLE
+      array([ 0.37454012,  0.95071431,  0.73199394,  0.59865848,  0.15601864,
+      0.15599452,  0.05808361,  0.86617615,  0.60111501,  0.70807258,
+      0.02058449,  0.96990985,  0.83244264,  0.21233911,  0.18182497,
+      0.18340451,  0.30424224,  0.52475643,  0.43194502,  0.29122914])
+    #+END_EXAMPLE
+    :END:
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      x = np.linspace(-3, 3, 100)
+      print(x)
+
+      rng = np.random.RandomState(42)
+      y = np.sin(4 * x) + x + rng.uniform(size=len(x))
+
+      plt.plot(x, y, 'o');
+    #+END_SRC
+
+** How to check the predict accuracy of classification or clustering
+    1. from sklearn.metrics import confusion_matrix
+    2. from sklearn.metrics import accuracy_score
+    3. from sklearn.metrics import adjusted_rand_score
+[[file:scipy-2017-sklearn/notebooks/08.Unsupervised_Learning-Clustering.org::*Unsupervised%20Learning%20Part%202%20--%20Clustering][Unsupervised Learning Part 2 -- Clustering]]
+[[file:scipy-2017-sklearn/notebooks/08.Unsupervised_Learning-Clustering.org::*comparing%20to%20true%20labels%20using%20confusion_matrix%20and%20accuracy_score][comparing to true labels using confusion_matrix and accuracy_score]]
+[[file:scipy-2017-sklearn/notebooks/08.Unsupervised_Learning-Clustering.org::*comparing%20to%20true%20labels%20using%20adjusted_rand_score][comparing to true labels using adjusted_rand_score]]

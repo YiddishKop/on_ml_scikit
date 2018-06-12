@@ -86,6 +86,14 @@
     https://commons.wikimedia.org/wiki/File:Petal-sepal.jpg#/media/File:Petal-sepal.jpg)
 
 **** from ~sklearn.datasets~ to ~sklearn.utils.Bunch~ to ~np.array~
+
+     #+BEGIN_QUOTE
+     ~sklearn.utils.Bunch~ is essentially a dict:
+     - ~bunch.keys()~ get all the keys of this dict
+     - ~bunch.data~ access the value(ndarray: the data it store) of key ~data~
+     - ~bunch.target~ access the value(ndarray: the label it store) of key ~target~
+     #+END_QUOTE
+
     scikit-learn embeds a copy of the iris CSV file along with a helper function
     to load it into numpy arrays:
 

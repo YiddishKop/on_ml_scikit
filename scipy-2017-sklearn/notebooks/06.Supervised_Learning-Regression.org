@@ -6,22 +6,23 @@
   %matplotlib inline
   import matplotlib.pyplot as plt
   import numpy as np
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[1]:
+# Out[67]:
 :END:
 
 * Supervised Learning Part 2 -- Regression Analysis
-In regression we are trying to predict a continuous output variable -- in
+
+In regression we are trying to predict a *continuous output variable* -- in
 contrast to the nominal variables we were predicting in the previous
 classification examples.
 
+*** create dataset from a sine curve
 Let's start with a simple toy example with one feature dimension (explanatory
-variable) and one target variable. We will create a dataset out of a sine curve
-with some noise:
+variable) and one target variable. We will *create a dataset out of a sine curve
+with some noise*:
 
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -30,24 +31,22 @@ print(x)
 
 rng = np.random.RandomState(42)
 y = np.sin(4 * x) + x + rng.uniform(size=len(x))
-
 plt.plot(x, y, 'o');
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[2]:
-[[file:./obipy-resources/85733fX.png]]
+# Out[69]:
+[[file:./obipy-resources/25041QGV.png]]
 :END:
 
-** Linear Regression
-The first model that we will introduce is the so-called simple linear
-regression. Here, we want to fit a line to the data, which
+** underfitting: Linear Regression is too simple
+The first model that we will introduce is the so-called *simple linear
+regression*. Here, we want to fit a line to the data, which
 
 One of the simplest models again is a linear one, that simply tries to predict
-the data as lying on a line. One way to find such a line is LinearRegression
-(also known as Ordinary Least Squares (OLS) regression). The interface for
+the data as lying on a line. One way to find such a line is *LinearRegression*
+(also known as *Ordinary Least Squares (OLS) regression*). The interface for
 LinearRegression is exactly the same as for the classifiers before, only that y
 now contains float values, instead of classes.
 
@@ -59,60 +58,59 @@ us convert the 1-dimensional x NumPy array into an X array with 2 axes:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print('Before: ', x.shape)
-X = x[:, np.newaxis]
+X = x[:, np.newaxis] #<- from (100,) to (100,1)
 print('After: ', X.shape)
-
+print(X)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[3]:
+# Out[75]:
 :END:
 
+*** splitting dataset to training and testing
 Again, we start by splitting our dataset into a training (75%) and a test set
 (25%):
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import train_test_split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.25, random_state=42)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[4]:
+# Out[77]:
 :END:
 
+*** create ML model by ~estimator.fit(X_train,y_train)~
 Next, we use the learning algorithm implemented in LinearRegression to fit a
 regression model to the training data:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.linear_model import LinearRegression
-regressor = LinearRegression()
-regressor.fit(X_train, y_train)
+  from sklearn.linear_model import LinearRegression
+  regressor = LinearRegression()
+  regressor.fit(X_train, y_train)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[5]:
+# Out[80]:
 : LinearRegression(copy_X=True, fit_intercept=True, n_jobs=1, normalize=False)
 :END:
 
 ​ After fitting to the training data, we paramerterized a linear regression model
 with the following values.
 
-
+*** get the ~coef~ and ~intercept~ of fitting line
+    Note that, you can do this ONLY after execute ~regressor.fit()~ method.
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print('Weight coefficients: ', regressor.coef_)
 print('y-axis intercept: ', regressor.intercept_)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[6]:
+# Out[81]:
 :END:
 
 Since our regression model is a linear one, the relationship between the target
@@ -120,6 +118,7 @@ variable (y) and the feature variable (x) is defined as
 
 $y = weight \times x + \text{intercept}$.
 
+*** plot the fitting line
 Plugging in the min and max values into thos equation, we can plot the
 regression fit to our training data:
 
@@ -134,30 +133,33 @@ plt.plot(X_train, y_train, 'o');
 
 #+RESULTS:
 :RESULTS:
-# Out[7]:
-[[file:./obipy-resources/8573Eqd.png]]
+# Out[82]:
+[[file:./obipy-resources/25041dQb.png]]
 :END:
 
-​ Similar to the estimators for classification in the previous notebook, we use
+*** plot the predict data points of training and testing
+Similar to the estimators for classification in the previous notebook, we use
 the predict method to predict the target variable. And we expect these predicted
 values to fall onto the line that we plotted previously:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-y_pred_train = regressor.predict(X_train)
+  #<- get the predict labels
+  #   It's obviously that the predict value is on the line.
 
-plt.plot(X_train, y_train, 'o', label="data")
-plt.plot(X_train, y_pred_train, 'o', label="prediction")
-plt.plot([X.min(), X.max()], [min_pt, max_pt], label='fit')
-plt.legend(loc='best')
+  y_pred_train = regressor.predict(X_train)
+
+  plt.plot(X_train, y_train, 'o', label="data")
+  plt.plot(X_train, y_pred_train, 'o', label="prediction")
+  plt.plot([X.min(), X.max()], [min_pt, max_pt], label='fit')
+  plt.legend(loc='best')
 
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[8]:
-: <matplotlib.legend.Legend at 0x7f1b0b037fd0>
-[[file:./obipy-resources/8573R0j.png]]
+# Out[83]:
+: <matplotlib.legend.Legend at 0x7f9c4a74dbe0>
+[[file:./obipy-resources/25041qah.png]]
 :END:
 
 As we can see in the plot above, the line is able to capture the general slope
@@ -177,13 +179,14 @@ plt.legend(loc='best');
 
 #+RESULTS:
 :RESULTS:
-# Out[9]:
-[[file:./obipy-resources/8573e-p.png]]
+# Out[84]:
+[[file:./obipy-resources/250413kn.png]]
 :END:
 
+*** evaluate the MSE-score of prediction
 Again, scikit-learn provides an easy way to evaluate the prediction
 quantitatively using the score method. For regression tasks, this is the R2
-score. Another popular way would be the Mean Squared Error (MSE). As its name
+score. Another popular way would be the ~Mean Squared Error (MSE)~. As its name
 implies, the MSE is simply the average squared difference over the predicted and
 actual target values
 
@@ -195,8 +198,8 @@ regressor.score(X_test, y_test)
 
 #+RESULTS:
 :RESULTS:
-# Out[10]:
-: 0.7994321405079685
+# Out[85]:
+: 0.79943214050796851
 :END:
 
 EXERCISE: Add a feature containing sin(4x) to X and redo the fit. Visualize the
@@ -204,13 +207,14 @@ predictions with this new richer, yet linear, model.
 
 # %load solutions/06B_lin_with_sine.py
 
-** KNeighborsRegression
-As for classification, we can also use a neighbor based method for regression.
+** change to a more complex model: KNeighborsRegression
+As for classification, we can also use a ~neighbor based method for regression~.
 We can simply take the output of the nearest point, or we could average several
 nearest points. This method is less popular for regression than for
 classification, but still a good baseline.
 
 
+*** get the ML model
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.neighbors import KNeighborsRegressor
 kneighbor_regression = KNeighborsRegressor(n_neighbors=1)
@@ -220,7 +224,7 @@ kneighbor_regression.fit(X_train, y_train)
 
 #+RESULTS:
 :RESULTS:
-# Out[11]:
+# Out[86]:
 #+BEGIN_EXAMPLE
   KNeighborsRegressor(algorithm='auto', leaf_size=30, metric='minkowski',
   metric_params=None, n_jobs=1, n_neighbors=1, p=2,
@@ -228,8 +232,8 @@ kneighbor_regression.fit(X_train, y_train)
 #+END_EXAMPLE
 :END:
 
+*** perfectly correct prediction for training dataset
 Again, let us look at the behavior on training and test set:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 y_pred_train = kneighbor_regression.predict(X_train)
@@ -241,13 +245,13 @@ plt.legend(loc='best');
 
 #+RESULTS:
 :RESULTS:
-# Out[12]:
-[[file:./obipy-resources/8573rIw.png]]
+# Out[87]:
+[[file:./obipy-resources/25041Evt.png]]
 :END:
 
-​ On the training set, we do a perfect job: each point is its own nearest
+*** the score of prediction on testing dataset
+On the training set, we do a perfect job: each point is its own nearest
 neighbor!
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 y_pred_test = kneighbor_regression.predict(X_test)
@@ -259,11 +263,11 @@ plt.legend(loc='best');
 
 #+RESULTS:
 :RESULTS:
-# Out[13]:
-[[file:./obipy-resources/85734S2.png]]
+# Out[88]:
+[[file:./obipy-resources/25041R5z.png]]
 :END:
 
-​ On the test set, we also do a better job of capturing the variation, but our
+On the test set, we also do a better job of capturing the variation, but our
 estimates look much messier than before. Let us look at the R2 score:
 
 
@@ -274,15 +278,32 @@ kneighbor_regression.score(X_test, y_test)
 
 #+RESULTS:
 :RESULTS:
-# Out[14]:
-: 0.9166293022467948
+# Out[89]:
+: 0.91662930224679484
 :END:
 
-Much better than before! Here, the linear model was not a good fit for our
-problem; it was lacking in complexity and thus under-fit our data.
+#+BEGIN_QUOTE
+UNDERFITTING: Much better than before! Here, the linear model(linear regression)
+was not a good fit for our problem; it was *lacking in complexity* and thus
+under-fit our data.
+#+END_QUOTE
 
+* EXERCISE
 EXERCISE: Compare the KNeighborsRegressor and LinearRegression on the boston
 housing dataset. You can load the dataset using ~sklearn.datasets.load_boston~.
 You can learn about the dataset by reading the DESCR attribute.
 
 # %load solutions/06A_knn_vs_linreg.py
+
+* Misc tools
+** scikit-learn
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.linear_model import LogisticRegression
+    5. from sklearn.linear_model import LinearRegression
+    6. from sklearn.neighbors import KNeighborsClassifier
+    7. from sklearn.neighbors import KNeighborsRegressor
+    #+END_QUOTE

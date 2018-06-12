@@ -21,34 +21,30 @@ For some types of data, for instance text data, a feature extraction step must
 be applied to convert it to numerical features. To illustrate we load the SMS
 spam dataset we used earlier.
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 import os
 with open(os.path.join("datasets", "smsspam", "SMSSpamCollection")) as f:
     lines = [line.strip().split("\t") for line in f.readlines()]
 text = [x[1] for x in lines]
 y = [x[0] == "ham" for x in lines]
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[138]:
+# Out[381]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import train_test_split
 text_train, text_test, y_train, y_test = train_test_split(text, y)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[139]:
+# Out[382]:
 :END:
 
 Previously, we applied the feature extraction manually, like so:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_extraction.text import TfidfVectorizer
@@ -60,53 +56,60 @@ X_test = vectorizer.transform(text_test)
 clf = LogisticRegression()
 clf.fit(X_train, y_train)
 clf.score(X_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[140]:
-: 0.9784791965566715
+# Out[383]:
+: 0.96700143472022959
 :END:
 
+*** pipeline ENTER!
 The situation where we learn a transformation and then apply it to the test data
 is very common in machine learning. Therefore scikit-learn has a shortcut for
-this, called pipelines:
-
+this, called ~pipelines~:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.pipeline import make_pipeline
 pipeline = make_pipeline(TfidfVectorizer(), LogisticRegression())
 pipeline.fit(text_train, y_train)
 pipeline.score(text_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[141]:
-: 0.9784791965566715
+# Out[384]:
+: 0.96700143472022959
 :END:
 
-As you can see, this makes the code much shorter and easier to handle. Behind
-the scenes, exactly the same as above is happening. When calling fit on the
-pipeline, it will call fit on each step in turn. ​ After the first step is fit,
-it will use the ``transform`` method of the first step to create a new
-representation. This will then be fed to the ``fit`` of the next step, and so
-on. Finally, on the last step, only ``fit`` is called. ​
+>>> what happend when we call fit/score/predict on pipeline
+- When calling ~fit~ on the pipeline, it will call ~fit~ *on each step* in turn. ​
+  After the first step is fit, it will use the ~transform~ method of the first
+  step to create a *new representation*. This will then be fed to the ~fit~ of
+  the next step, and so on. Finally, on the last step, only ~fit~ is called. ​
 
 file:figures/pipeline.png
 
-If we call ``score``, only ``transform`` will
-be called on each step - this could be the test set after all! Then, on the last
-step, ``score`` is called with the new representation. The same goes for
-``predict``.
+- When calling ~score~, only ~transform~ will be called *on each step* - this
+  could be the ~test set~ after all! Then, on the last step, ~score~ is called
+  with the *new representation*.
 
-Building pipelines not only simplifies the code, it is also important for model
-selection. Say we want to grid-search C to tune our Logistic Regression above.
+- The same goes for ~predict~.
+
+
+
+** benefit of using pipeline
+*** 1. make code shorter and clearer
+As you can see, this makes the code much shorter and easier to handle. Behind
+the scenes, exactly the same as above is happening.
+
+
+*** 2. using pipeline on model selection
+Building pipelines not only simplifies the code, it is also *important for model
+selection*. Say we want to *grid-search* ~C~ to tune our Logistic Regression
+above.
 
 Let's say we do it like this:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 # This illustrates a common mistake. Don't use this code!
@@ -118,12 +121,11 @@ X_test = vectorizer.transform(text_test)
 clf = LogisticRegression()
 grid = GridSearchCV(clf, param_grid={'C': [.1, 1, 10, 100]}, cv=5)
 grid.fit(X_train, y_train)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[142]:
+# Out[386]:
 #+BEGIN_EXAMPLE
   GridSearchCV(cv=5, error_score='raise',
   estimator=LogisticRegression(C=1.0, class_weight=None, dual=False, fit_intercept=True,
@@ -132,19 +134,20 @@ grid.fit(X_train, y_train)
   verbose=0, warm_start=False),
   fit_params=None, iid=True, n_jobs=1,
   param_grid={'C': [0.1, 1, 10, 100]}, pre_dispatch='2*n_jobs',
-  refit=True, return_train_score='warn', scoring=None, verbose=0)
+  refit=True, return_train_score=True, scoring=None, verbose=0)
 #+END_EXAMPLE
 :END:
 
-*** What did we do wrong?
+>>> What did we do wrong?
+
+It see some folds in X_train which will be testing fold in future
 
 Here, we did grid-search with cross-validation on X_train. However, when
-applying TfidfVectorizer, it saw all of the X_train, not only the training
-folds! So it could use knowledge of the frequency of the words in the
-test-folds. This is called "contamination" of the test set, and leads to too
+applying ~TfidfVectorizer~, it *saw all of the X_train, not only the training
+folds*! So it could use knowledge of the frequency of the words in the
+test-folds. This is called "*contamination*" of the test set, and leads to too
 optimistic estimates of generalization performance, or badly selected
 parameters. We can fix this with the pipeline, though:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import GridSearchCV
@@ -154,26 +157,28 @@ grid = GridSearchCV(pipeline,
                     param_grid={'logisticregression__C': [.1, 1, 10, 100]}, cv=5)
 grid.fit(text_train, y_train)
 grid.score(text_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[143]:
-: 0.9892395982783357
+# Out[387]:
+: 0.98493543758967006
 :END:
 
-Note that we need to tell the pipeline where at which step we wanted to set the
-parameter C. We can do this using the special __ syntax. The name before the __
-is simply the name of the class, the part after __ is the parameter we want to
-set with grid-search.
+>>> ~__~ symbol
+Related to ~'logisticregression__C': [.1, 1, 10, 100]~, note that for we need to
+tell the pipeline where at which step we wanted to set the parameter ~C~. We can
+do this using the special '__' syntax.
+
+- The name before the '__' is simply the name of the class,
+- The part after '__' is the parameter we want to set with grid-search.
 
 
 file:figures/pipeline_cross_validation.png
 
+*** 3. search over parameters
 Another benefit of using pipelines is that we can now also search over
-parameters of the feature extraction with GridSearchCV:
-
+parameters of the feature extraction with ~GridSearchCV~:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import GridSearchCV
@@ -189,8 +194,8 @@ grid.score(text_test, y_test)
 
 #+RESULTS:
 :RESULTS:
-# Out[144]:
-: 0.9892395982783357
+# Out[388]:
+: 0.98565279770444758
 :END:
 
 EXERCISE: Create a pipeline out of a StandardScaler and Ridge regression and
@@ -200,3 +205,42 @@ sklearn.preprocessing.PolynomialFeatures transformer as a second preprocessing
 step, and grid-search the degree of the polynomials (try 1, 2 and 3).
 
 # %load solutions/15A_ridge_grid.py
+
+
+* Misc tools
+** scikit-learn
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.model_selection import cross_val_score
+    5. from sklearn.model_selection import KFold
+    6. from sklearn.model_selection import StratifiedKFold
+    7. from sklearn.model_selection import ShuffleSplit
+    8. from sklearn.model_selection import GridSearchCV   *
+    9. from sklearn.linear_model import LogisticRegression
+    10. from sklearn.linear_model import LinearRegression
+    11. from sklearn.neighbors import KNeighborsClassifier
+    12. from sklearn.neighbors import KNeighborsRegressor
+    13. from sklearn.preprocessing import StandardScaler
+    14. from sklearn.decomposition import PCA
+    15. from sklearn.metrics import confusion_matrix, accuracy_score
+    16. from sklearn.metrics import adjusted_rand_score
+    17. from sklearn.cluster import KMeans
+    18. from sklearn.cluster import KMeans
+    19. from sklearn.cluster import MeanShift
+    20. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    21. from sklearn.cluster import AffinityPropagation
+    22. from sklearn.cluster import SpectralClustering
+    23. from sklearn.cluster import Ward
+    24. from sklearn.metrics import confusion_matrix
+    25. from sklearn.metrics import accuracy_score
+    26. from sklearn.metrics import adjusted_rand_score
+    27. from sklearn.feature_extraction import DictVectorizer
+    28. from sklearn.feature_extraction.text import CountVectorizer
+    29. from sklearn.feature_extraction.text import TfidfVectorizer
+    30. from sklearn.preprocessing import Imputer
+    31. from sklearn.dummy import DummyClassifier
+    32. from sklearn.pipeline import make_pipeline  *
+    #+END_QUOTE

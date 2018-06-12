@@ -10,37 +10,43 @@ import numpy as np
 
 #+RESULTS:
 :RESULTS:
-# Out[63]:
+# Out[270]:
 :END:
 
 * Methods - Text Feature Extraction with Bag-of-Words
+>>> bag_of_words
+
 In many tasks, like in the classical spam detection, your input data is text.
 Free text with variables length is very far from the fixed length numeric
-representation that we need to do machine learning with scikit-learn. However,
-there is an easy and effective way to go from text data to a numeric
-representation using the so-called bag-of-words model, which provides a data
+representation that we need to do machine learning with scikit-learn.
+
+However, there is an easy and *effective way* to go *from text data to a numeric
+representation* using the so-called *bag-of-words model*, which provides a data
 structure that is compatible with the machine learning aglorithms in
 scikit-learn.
 
-
+>>> steps to build bag_of_words
 file:figures/bag_of_words.png
 
 
-Let's assume that each sample
-in your dataset is represented as one string, which could be just a sentence, an
-email, or a whole news article or book. To represent the sample, we first split
-the string into a list of tokens, which correspond to (somewhat normalized)
-words. A simple way to do this to just split by whitespace, and then lowercase
-the word.
+Let's assume that *each sample* in your dataset is represented as *one string*,
+which could be just *a sentence, an email, or a whole news article or book*. To
+represent the sample, we :
 
-Then, we build a vocabulary of all tokens (lowercased words) that appear in our
-whole dataset. This is usually a very large vocabulary. Finally, looking at our
-single sample, we could show how often each word in the vocabulary appears. We
-represent our string by a vector, where each entry is how often a given word in
-the vocabulary appears in the string.
+1. first *split the string into a list of tokens*, which correspond to (somewhat
+   normalized) words. A simple way to do this to just split by whitespace, and
+   then lowercase the word.
 
+2. Then, we build a *vocabulary of all tokens* (lowercased words) that *appear in
+   our whole dataset*. This is usually a very large vocabulary.
+
+3. Finally, looking at our single sample, we could show *how often each word* in
+   the vocabulary appears. We represent our string by a *vector*, where *each entry
+   is how often a given word in the vocabulary* appears in the string.
+
+>>> traits of bag_of_words model
 As each sample will only contain very few words, most entries will be zero,
-leading to a very high-dimensional but sparse representation.
+leading to a very *high-dimensional but sparse* representation.
 
 The method is called "bag-of-words," as the order of the words is lost entirely.
 
@@ -53,11 +59,16 @@ len(X)
 
 #+RESULTS:
 :RESULTS:
-# Out[64]:
+# Out[271]:
 : 2
 :END:
 
+>>> general usage of ML model
+1. class to obj : CountVectorizer()
+2. obj to model : CountVectorizer().fit(X)
+3. model attrs and methods: CountVectorizer().fit(X).vocabulary_
 
+>>> create obj, and obj to model
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_extraction.text import CountVectorizer
 vectorizer = CountVectorizer()
@@ -67,7 +78,7 @@ vectorizer.fit(X)
 
 #+RESULTS:
 :RESULTS:
-# Out[65]:
+# Out[273]:
 #+BEGIN_EXAMPLE
   CountVectorizer(analyzer='word', binary=False, decode_error='strict',
   dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
@@ -78,14 +89,14 @@ vectorizer.fit(X)
 #+END_EXAMPLE
 :END:
 
+>>> attributes of CountVectorizer model
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 vectorizer.vocabulary_
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[66]:
+# Out[274]:
 #+BEGIN_EXAMPLE
   {'end': 0,
   'fire': 1,
@@ -99,35 +110,33 @@ vectorizer.vocabulary_
 #+END_EXAMPLE
 :END:
 
+>>> methods of CountVectorizer model
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_bag_of_words = vectorizer.transform(X)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[67]:
+# Out[279]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_bag_of_words.shape
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[68]:
+# Out[276]:
 : (2, 9)
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_bag_of_words
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[69]:
+# Out[280]:
 #+BEGIN_EXAMPLE
   <2x9 sparse matrix of type '<class 'numpy.int64'>'
   with 12 stored elements in Compressed Sparse Row format>
@@ -136,12 +145,11 @@ X_bag_of_words
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_bag_of_words.toarray()
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[70]:
+# Out[281]:
 #+BEGIN_EXAMPLE
   array([[1, 1, 0, 1, 1, 1, 1, 1, 1],
   [0, 0, 1, 1, 1, 1, 0, 0, 0]])
@@ -150,47 +158,45 @@ X_bag_of_words.toarray()
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 vectorizer.get_feature_names()
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[71]:
+# Out[282]:
 : ['end', 'fire', 'ice', 'in', 'say', 'some', 'the', 'will', 'world']
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 vectorizer.inverse_transform(X_bag_of_words)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[72]:
+# Out[283]:
 #+BEGIN_EXAMPLE
   [array(['end', 'fire', 'in', 'say', 'some', 'the', 'will', 'world'],
-  dtype='<U5'), array(['ice', 'in', 'say', 'some'], dtype='<U5')]
+  dtype='<U5'), array(['ice', 'in', 'say', 'some'],
+  dtype='<U5')]
 #+END_EXAMPLE
 :END:
 
 ** tf-idf Encoding
-A useful transformation that is often applied to the bag-of-word encoding is the
-so-called term-frequency inverse-document-frequency (tf-idf) scaling, which is a
-non-linear transformation of the word counts.
+A useful transformation that is often applied to the *bag-of-word encoding* is
+the so-called *term-frequency inverse-document-frequency (tf-idf) scaling*,
+which is a non-linear transformation of the word counts.
 
-The tf-idf encoding rescales words that are common to have less weight:
+The *tf-idf* encoding rescales words that are common to have less weight:
 
-
+>>> class to obj, obj to model
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_extraction.text import TfidfVectorizer
 tfidf_vectorizer = TfidfVectorizer()
 tfidf_vectorizer.fit(X)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[74]:
+# Out[284]:
 #+BEGIN_EXAMPLE
   TfidfVectorizer(analyzer='word', binary=False, decode_error='strict',
   dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
@@ -202,39 +208,48 @@ tfidf_vectorizer.fit(X)
 #+END_EXAMPLE
 :END:
 
+
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 import numpy as np
 np.set_printoptions(precision=2)
 print(tfidf_vectorizer.transform(X).toarray())
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[75]:
+# Out[285]:
 :END:
 
+>>> what is a tfidf
 tf-idfs are a way to represent documents as feature vectors. tf-idfs can be
 understood as a modification of the raw term frequencies (tf); the tf is the
-count of how often a particular word occurs in a given document. The concept
-behind the tf-idf is to downweight terms proportionally to the number of
-documents in which they occur. Here, the idea is that terms that occur in many
-different documents are likely unimportant or don't contain any useful
-information for Natural Language Processing tasks such as document
-classification. If you are interested in the mathematical details and equations,
-see this external IPython Notebook that walks you through the computation.
+count of how often a particular word occurs in a given document.
 
-** Bigrams and N-Grams
+The concept behind the tf-idf is to *downweight* terms proportionally to the
+*number of documents in which they occur*.
+
+Here, the idea is that terms that occur in many different documents are likely
+*unimportant* or don't contain any useful information for Natural Language
+Processing tasks such as document classification. If you are interested in the
+mathematical details and equations, see this external IPython Notebook that
+walks you through the computation.
+
+** Bigrams and N-Grams: general tokenization
+   2-Grams: 2 front words infer the 3rd word
+   N-Grasm: N fromt words infer the 3rd word
+
+*** what is n-grams
 In the example illustrated in the figure at the beginning of this notebook, we
-used the so-called 1-gram (unigram) tokenization: Each token represents a single
-element with regard to the splittling criterion.
+used the so-called *1-gram (unigram)* tokenization: Each token represents a
+single element with regard to the splitting criterion.
 
-Entirely discarding word order is not always a good idea, as composite phrases
+*** why we need n-grams
+*Entirely discarding word order is not always a good idea*, as composite phrases
 often have specific meaning, and modifiers like "not" can invert the meaning of
 words.
 
-A simple way to include some word order are n-grams, which don't only look at a
-single token, but at all pairs of neighborhing tokens. For example, in 2-gram
+A simple way to *include some word order* are n-grams, which don't only look at a
+single token, but at all pairs of *neighborhing tokens*. For example, in 2-gram
 (bigram) tokenization, we would group words together with an overlap of one
 word; in 3-gram (trigram) splits we would create an overlap two words, and so
 forth:
@@ -249,48 +264,140 @@ forth:
   dataset, and task. Or in other words, we have consider "n" in "n-grams" as a
   tuning parameters, and in later notebooks, we will see how we deal with these.
 
-Now, let's create a bag of words model of bigrams using scikit-learn's
+Now, let's create a *bag of words model of bigrams* using scikit-learn's
 CountVectorizer:
 
-
+>>> create obj and conver to model by ~fit~: this will create vocabulary and count the number of occurrence in each 'string'
+>>> compare bigrams(2-grams) with unigrams(1-gram)
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-# look at sequences of tokens of minimum length 2 and maximum length 2
-bigram_vectorizer = CountVectorizer(ngram_range=(2, 2))
-bigram_vectorizer.fit(X)
+  # look at sequences of tokens of minimum length 2 and maximum length 2
+  bigram_vectorizer = CountVectorizer(ngram_range=(2, 2))
 
-bigram_vectorizer.get_feature_names()
+  from sklearn.feature_extraction.text import CountVectorizer
+  vectorizer = CountVectorizer()
 
-bigram_vectorizer.transform(X).toarray()
-
+  vectorizer.fit(X), bigram_vectorizer.fit(X)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[76]:
+# Out[288]:
 #+BEGIN_EXAMPLE
-  array([[1, 1, 0, 0, 1, 1, 1, 1, 1],
-  [0, 0, 1, 1, 0, 1, 0, 0, 0]])
+  (CountVectorizer(analyzer='word', binary=False, decode_error='strict',
+  dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
+  lowercase=True, max_df=1.0, max_features=None, min_df=1,
+  ngram_range=(1, 1), preprocessor=None, stop_words=None,
+  strip_accents=None, token_pattern='(?u)\\b\\w\\w+\\b',
+  tokenizer=None, vocabulary=None),
+  CountVectorizer(analyzer='word', binary=False, decode_error='strict',
+  dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
+  lowercase=True, max_df=1.0, max_features=None, min_df=1,
+  ngram_range=(2, 2), preprocessor=None, stop_words=None,
+  strip_accents=None, token_pattern='(?u)\\b\\w\\w+\\b',
+  tokenizer=None, vocabulary=None))
 #+END_EXAMPLE
 :END:
 
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  bigram_vectorizer.get_feature_names(), vectorizer.get_feature_names()
+#+END_SRC
+
+>>> what is the tokenization
+#+RESULTS:
+:RESULTS:
+# Out[289]:
+#+BEGIN_EXAMPLE
+  (['end in',
+  'in fire',
+  'in ice',
+  'say in',
+  'say the',
+  'some say',
+  'the world',
+  'will end',
+  'world will'],
+  ['end', 'fire', 'ice', 'in', 'say', 'some', 'the', 'will', 'world'])
+#+END_EXAMPLE
+:END:
+
+>>> representation of samples(here, 1 row 1 sample)
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  bigram_vectorizer.transform(X).toarray(), X_bag_of_words.toarray()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[290]:
+#+BEGIN_EXAMPLE
+  (array([[1, 1, 0, 0, 1, 1, 1, 1, 1],
+  [0, 0, 1, 1, 0, 1, 0, 0, 0]]), array([[1, 1, 0, 1, 1, 1, 1, 1, 1],
+  [0, 0, 1, 1, 1, 1, 0, 0, 0]]))
+#+END_EXAMPLE
+:END:
+
+
+>>> combine unigrams with bigrams
+This will give a lone vector representation for each sample(string).
+
 Often we want to include unigrams (single tokens) AND bigrams, wich we can do by
-passing the following tuple as an argument to the ngram_range parameter of the
+passing the following tuple as an argument to the ~ngram_range~ parameter of the
 CountVectorizer function:
 
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-gram_vectorizer = CountVectorizer(ngram_range=(1, 2))
-gram_vectorizer.fit(X)
-
-gram_vectorizer.get_feature_names()
-
-gram_vectorizer.transform(X).toarray()
-
+  gram_vectorizer = CountVectorizer(ngram_range=(1, 2))
+  gram_vectorizer.fit(X)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[77]:
+# Out[293]:
+#+BEGIN_EXAMPLE
+  CountVectorizer(analyzer='word', binary=False, decode_error='strict',
+  dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
+  lowercase=True, max_df=1.0, max_features=None, min_df=1,
+  ngram_range=(1, 2), preprocessor=None, stop_words=None,
+  strip_accents=None, token_pattern='(?u)\\b\\w\\w+\\b',
+  tokenizer=None, vocabulary=None)
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  gram_vectorizer.get_feature_names()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[294]:
+#+BEGIN_EXAMPLE
+  ['end',
+  'end in',
+  'fire',
+  'ice',
+  'in',
+  'in fire',
+  'in ice',
+  'say',
+  'say in',
+  'say the',
+  'some',
+  'some say',
+  'the',
+  'the world',
+  'will',
+  'will end',
+  'world',
+  'world will']
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  gram_vectorizer.transform(X).toarray()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[295]:
 #+BEGIN_EXAMPLE
   array([[1, 1, 1, 0, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1],
   [0, 0, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0, 0, 0, 0, 0, 0]])
@@ -298,28 +405,54 @@ gram_vectorizer.transform(X).toarray()
 :END:
 
 ** Character n-grams
-Sometimes it is also helpful not only to look at words, but to consider single characters instead.
+Sometimes it is also helpful not only to look at words, but to consider single
+characters instead.
 
-That is particularly useful if we have very noisy data and want to identify the
-language, or if we want to predict something about a single word. We can simply
-look at characters instead of words by setting analyzer="char". Looking at
-single characters is usually not very informative, but looking at longer n-grams
-of characters could be:
+That is particularly useful if we have *very noisy data* and want to identify
+the language, or if we want to predict something about a single word. We can
+simply look at characters instead of words by setting ~analyzer="char"~. Looking
+at single characters is usually not very informative, but *looking at longer
+n-grams of characters* could be:
 
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-X
-
-char_vectorizer = CountVectorizer(ngram_range=(2, 2), analyzer="char")
-char_vectorizer.fit(X)
-
-print(char_vectorizer.get_feature_names())
+  X
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[78]:
+# Out[297]:
+: ['Some say the world will end in fire,', 'Some say in ice.']
 :END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  char_vectorizer = CountVectorizer(ngram_range=(2, 2), analyzer="char")
+  char_vectorizer.fit(X)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[298]:
+#+BEGIN_EXAMPLE
+  CountVectorizer(analyzer='char', binary=False, decode_error='strict',
+  dtype=<class 'numpy.int64'>, encoding='utf-8', input='content',
+  lowercase=True, max_df=1.0, max_features=None, min_df=1,
+  ngram_range=(2, 2), preprocessor=None, stop_words=None,
+  strip_accents=None, token_pattern='(?u)\\b\\w\\w+\\b',
+  tokenizer=None, vocabulary=None)
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  print(char_vectorizer.get_feature_names())
+  print(len(char_vectorizer.get_feature_names())) # 35
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[304]:
+:END:
+
 
 EXERCISE: Compute the bigrams from "zen of python" as given below (or by import
 this), and find the most common trigram. We want to treat each line as a
@@ -350,3 +483,87 @@ Namespaces are one honking great idea -- let's do more of those!"""
 #+END_SRC
 
 # %load solutions/11_ngrams.py
+
+* Misc tools
+** Scikit-learn
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.linear_model import LogisticRegression
+    5. from sklearn.linear_model import LinearRegression
+    6. from sklearn.neighbors import KNeighborsClassifier
+    7. from sklearn.neighbors import KNeighborsRegressor
+    8. from sklearn.preprocessing import StandardScaler
+    9. from sklearn.decomposition import PCA
+    10. from sklearn.metrics import confusion_matrix, accuracy_score
+    11. from sklearn.metrics import adjusted_rand_score
+    12. from sklearn.cluster import KMeans
+    13. from sklearn.cluster import KMeans
+    14. from sklearn.cluster import MeanShift
+    15. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    16. from sklearn.cluster import AffinityPropagation
+    17. from sklearn.cluster import SpectralClustering
+    18. from sklearn.cluster import Ward
+    19. from sklearn.metrics import confusion_matrix
+    20. from sklearn.metrics import accuracy_score
+    21. from sklearn.metrics import adjusted_rand_score
+    22. from sklearn.feature_extraction import DictVectorizer
+    23. from sklearn.feature_extraction.text import CountVectorizer *
+    24. from sklearn.feature_extraction.text import TfidfVectorizer *
+    25. from sklearn.preprocessing import Imputer
+    26. from sklearn.dummy import DummyClassifier
+    #+END_QUOTE
+
+*** ML fn in this notes
+*** CountVectorizer
+    CountVectorizer implements both *tokenization* and *occurrence counting* in
+    a single class
+
+**** Ctor parameters
+        #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+          CountVectorizer(input=’content’,               # sequence of 'filepath', 'string'
+                          encoding=’utf-8’,
+                          decode_error=’strict’,
+                          strip_accents=None,
+                          lowercase=True,
+                          preprocessor=None,
+                          tokenizer=None,                # user-defined method to get token
+                          stop_words=None,
+                          token_pattern=’(?u)\b\w\w+\b’, # regex to filt the 'word' token
+                          ngram_range=(1, 1),            # the range of n-grams, '(min=2,max=2)' means 2-grams
+                          analyzer=’word’,               # string, unit of one gram, can be 'word' or 'char'
+                          max_df=1.0,                    # filt out the token frequency > max_df
+                          min_df=1,                      # filt out the token frequency < min_df
+                          max_features=None,             # only get top {max_features}th frequent token
+                          vocabulary=None,               # specify what are the words you care about
+                          binary=False,                  # frequency will be 0 or 1, binary values
+                          dtype=<class ‘numpy.int64’>)
+        #+END_SRC
+
+**** attributes
+     | attributes  | description                                         |
+     |-------------+-----------------------------------------------------|
+     | vocabulary_ | dict, A mapping of terms to feature indices.        |
+     |-------------+-----------------------------------------------------|
+     | stop_words_ | set, Terms that were ignored because they either:   |
+     |             | - occurred in too many documents (max_df)           |
+     |             | - occurred in too few documents (min_df)            |
+     |             | - were cut off by feature selection (max_features). |
+
+**** Methods
+| method                            | description                                                       |
+|-----------------------------------+-------------------------------------------------------------------|
+| build_analyzer()                  | Return a callable that handles preprocessing and tokenization     |
+| build_preprocessor()              | Return a function to preprocess the text before tokenization      |
+| build_tokenizer()                 | Return a function that splits a string into a sequence of tokens  |
+| decode(doc)                       | Decode the input into a string of unicode symbols                 |
+| fit(raw_documents[, y])           | Learn a vocabulary dictionary of all tokens in the raw documents. |
+| fit_transform(raw_documents[, y]) | Learn the vocabulary dictionary and return term-document matrix.  |
+| get_feature_names()               | Array mapping from feature integer indices to feature name        |
+| get_params([deep])                | Get parameters for this estimator.                                |
+| get_stop_words()                  | Build or fetch the effective stop words list                      |
+| inverse_transform(X)              | Return terms per document with nonzero entries in X.              |
+| set_params(**params)              | Set the parameters of this estimator.                             |
+| transform(raw_documents)          | Transform documents to document-term sparse matrix(csr_matrix).   |

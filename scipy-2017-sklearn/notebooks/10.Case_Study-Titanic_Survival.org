@@ -15,10 +15,9 @@ of quantitative features from data. By the end of this section you will
 ** What Are Features?
 *** Numerical Features
 Recall that data in scikit-learn is expected to be in two-dimensional arrays, of
-size n_samples ×× n_features.
+size ~n_samples × n_features~.
 
 Previously, we looked at the iris dataset, which has 150 samples and 4 features
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.datasets import load_iris
@@ -28,7 +27,7 @@ print(iris.data.shape)
 
 #+RESULTS:
 :RESULTS:
-# Out[48]:
+# Out[203]:
 :END:
 
 These features are:
@@ -47,20 +46,35 @@ color of each iris:
 
 color in [red, blue, purple]
 
-You might be tempted to assign numbers to these features, i.e. red=1, blue=2,
-purple=3 but in general this is a bad idea. Estimators tend to operate under the
-assumption that numerical features lie on some continuous scale, so, for
-example, 1 and 2 are more alike than 1 and 3, and this is often not the case for
-categorical features.
+**** It's bad to give categorical feature the numberical encoding
+You might be tempted to assign numbers to these features,
 
-In fact, the example above is a subcategory of "categorical" features, namely,
-"nominal" features. Nominal features don't imply an order, whereas "ordinal"
-features are categorical features that do imply an order. An example of ordinal
-features would be T-shirt sizes, e.g., XL > L > M > S.
+i.e.
+  - red=1,
+  - blue=2,
+  - purple=3
 
-One work-around for parsing nominal features into a format that prevents the
-classification algorithm from asserting an order is the so-called one-hot
-encoding representation. Here, we give each category its own dimension.
+*but in general this is a bad idea*. Estimators tend to operate under the
+assumption that there is a numerical relationship lie on numberical features ,
+so, for example,
+
+  - *1 and 2 are more alike than 1 and 3*,
+  - *1 + 2 = 3*
+  - etc.
+
+and this is often not the case for categorical features.
+
+**** two kinds of categorical feature encoding strategy
+     - *nominal categorical feature* : In fact, the example above is a subcategory
+       of "categorical" features, namely, "*nominal*" features. Nominal features
+       *don't imply an order*.
+     - *ordinal categorical feature* : are categorical features that *do imply an
+       order*. An example of ordinal features would be T-shirt sizes, e.g., *XL >
+       L > M > S*.
+
+One work-around for parsing *nominal* features into a format that prevents the
+classification algorithm from asserting an order is the so-called *one-hot
+encoding* representation. Here, we give each category its own dimension.
 
 The enriched iris feature set would hence be in this case:
 
@@ -76,11 +90,11 @@ Note that using many of these categorical features may result in data which is
 better represented as a sparse matrix, as we'll see with the text classification
 example below.
 
-*** Using the DictVectorizer to encode categorical features
+*** Using the ~DictVectorizer~ to encode Categorical features
 When the source data is encoded has a list of dicts where the values are either
-strings names for categories or numerical values, you can use the DictVectorizer
-class to compute the boolean expansion of the categorical features while leaving
-the numerical features unimpacted:
+strings names for categories or numerical values, you can use the
+~DictVectorizer~ class to compute the boolean expansion of the categorical
+features while leaving the numerical features unimpacted:
 
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -93,32 +107,55 @@ measurements = [
 
 #+RESULTS:
 :RESULTS:
-# Out[49]:
+# Out[204]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_extraction import DictVectorizer
 vec = DictVectorizer()
 vec
-
-vec.fit_transform(measurements).toarray()
-
-vec.get_feature_names()
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[50]:
+# Out[205]:
+#+BEGIN_EXAMPLE
+  DictVectorizer(dtype=<class 'numpy.float64'>, separator='=', sort=True,
+  sparse=True)
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  vec.fit_transform(measurements).toarray()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[206]:
+#+BEGIN_EXAMPLE
+  array([[  1.,   0.,   0.,  33.],
+  [  0.,   1.,   0.,  12.],
+  [  0.,   0.,   1.,  18.]])
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  vec.get_feature_names()
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[207]:
 : ['city=Dubai', 'city=London', 'city=San Francisco', 'temperature']
 :END:
 
-** Derived Features
-Another common feature type are derived features, where some pre-processing step
-is applied to the data to generate features that are somehow more informative.
-Derived features may be based in feature extraction and dimensionality reduction
-(such as PCA or manifold learning), may be linear or nonlinear combinations of
-features (such as in polynomial regression), or may be some more sophisticated
-transform of the features.
+*** Derived Features
+ Another common feature type are derived features, where some pre-processing
+ step is applied to the data to generate features that are somehow more
+ informative. Derived features may be based in *feature extraction* and
+ *dimensionality reduction* (such as PCA or manifold learning), may be linear or
+ nonlinear combinations of features (such as in polynomial regression), or may
+ be some more sophisticated transform of the features.
 
 ** Combining Numerical and Categorical Features
 As an example of how to work with both categorical and numerical data, we will
@@ -143,7 +180,7 @@ print(titanic.columns)
 
 #+RESULTS:
 :RESULTS:
-# Out[51]:
+# Out[217]:
 :END:
 
 Here is a broad description of the keys and what they mean:
@@ -178,7 +215,7 @@ titanic.head()
 
 #+RESULTS:
 :RESULTS:
-# Out[52]:
+# Out[244]:
 #+BEGIN_EXAMPLE
   pclass  survived                                             name     sex  \
   0       1         1                    Allen, Miss. Elisabeth Walton  female
@@ -209,13 +246,16 @@ is unique to each person (probably) and also non-informative. For a first try,
 we will use "pclass", "sibsp", "parch", "fare" and "embarked" as our features:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-labels = titanic.survived.values
-features = titanic[['pclass', 'sex', 'age', 'sibsp', 'parch', 'fare', 'embarked']]
+  # print(type(titanic))                 #<- DataFrame
+  # print(type(titanic.survived))        #<- Series
+  # print(type(titanic.survived.values)) #<- ndarray
+  labels = titanic.survived.values
+  features = titanic[['pclass', 'sex', 'age', 'sibsp', 'parch', 'fare', 'embarked']]
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[53]:
+# Out[250]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -225,7 +265,7 @@ features.head()
 
 #+RESULTS:
 :RESULTS:
-# Out[54]:
+# Out[246]:
 #+BEGIN_EXAMPLE
   pclass     sex      age  sibsp  parch      fare embarked
   0       1  female  29.0000      0      0  211.3375        S
@@ -248,7 +288,7 @@ pd.get_dummies(features).head()
 
 #+RESULTS:
 :RESULTS:
-# Out[55]:
+# Out[247]:
 #+BEGIN_EXAMPLE
   pclass      age  sibsp  parch      fare  sex_female  sex_male  embarked_C  \
   0       1  29.0000      0      0  211.3375           1         0           0
@@ -279,7 +319,7 @@ features_dummies.head(n=16)
 
 #+RESULTS:
 :RESULTS:
-# Out[56]:
+# Out[248]:
 #+BEGIN_EXAMPLE
   age  sibsp  parch      fare  pclass_1  pclass_2  pclass_3  sex_female  \
   0   29.0000      0      0  211.3375         1         0         0           1
@@ -326,7 +366,7 @@ data = features_dummies.values
 
 #+RESULTS:
 :RESULTS:
-# Out[57]:
+# Out[252]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -337,14 +377,13 @@ np.isnan(data).any()
 
 #+RESULTS:
 :RESULTS:
-# Out[58]:
+# Out[253]:
 : True
 :END:
 
 With all of the hard data loading work out of the way, evaluating a classifier
 on this data becomes straightforward. Setting up the simplest possible model, we
-want to see what the simplest score can be with DummyClassifier.
-
+want to see what the simplest score can be with ~DummyClassifier~.
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
   from sklearn.model_selection import train_test_split
@@ -359,7 +398,7 @@ want to see what the simplest score can be with DummyClassifier.
 
 #+RESULTS:
 :RESULTS:
-# Out[60]:
+# Out[264]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -369,7 +408,7 @@ np.isnan(train_data_finite).any()
 
 #+RESULTS:
 :RESULTS:
-# Out[61]:
+# Out[265]:
 : False
 :END:
 
@@ -385,7 +424,7 @@ np.isnan(train_data_finite).any()
 
 #+RESULTS:
 :RESULTS:
-# Out[62]:
+# Out[269]:
 :END:
 
 EXERCISE: Try executing the above classification, using LogisticRegression and
@@ -393,3 +432,309 @@ RandomForestClassifier instead of DummyClassifier Does selecting a different
 subset of features help?
 
 # %load solutions/10_titanic.py
+
+* Misc tools
+** Scikit-leanr
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.linear_model import LogisticRegression
+    5. from sklearn.linear_model import LinearRegression
+    6. from sklearn.neighbors import KNeighborsClassifier
+    7. from sklearn.neighbors import KNeighborsRegressor
+    8. from sklearn.preprocessing import StandardScaler
+    9. from sklearn.decomposition import PCA
+    10. from sklearn.metrics import confusion_matrix, accuracy_score
+    11. from sklearn.metrics import adjusted_rand_score
+    12. from sklearn.cluster import KMeans
+    13. from sklearn.cluster import KMeans
+    14. from sklearn.cluster import MeanShift
+    15. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    16. from sklearn.cluster import AffinityPropagation
+    17. from sklearn.cluster import SpectralClustering
+    18. from sklearn.cluster import Ward
+    19. from sklearn.metrics import confusion_matrix
+    20. from sklearn.metrics import accuracy_score
+    21. from sklearn.metrics import adjusted_rand_score
+    22. from sklearn.feature_extraction import DictVectorizer
+    23. from sklearn.preprocessing import Imputer
+    24. from sklearn.dummy import DummyClassifier
+    #+END_QUOTE
+
+*** ML fn of this note
+1. using DictVectorizer
+   vec.get_feature_names()
+from sklearn.feature_extraction import DictVectorizer
+vec = DictVectorizer()
+vec.fit_transform(measurements).toarray()
+
+
+np.isnan(data).any()
+
+
+  print(type(titanic))                 #<- DataFrame
+  print(type(titanic.survived))        #<- Series
+  print(type(titanic.survived.values)) #<- ndarray
+
+*** DictVectorizer
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      from sklearn.feature_extraction import DictVectorizer
+      measurements = [
+          {'city': 'Dubai', 'temperature': 33.},
+          {'city': 'London', 'temperature': 12.},
+          {'city': 'San Francisco', 'temperature': 18.},
+      ] # an array of dicts
+      dv = DictVectorizer()
+      vec = dv.fit_transform(measurements).toarray()
+      vec
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[214]:
+#+BEGIN_EXAMPLE
+  array([[  1.,   0.,   0.,  33.],
+  [  0.,   1.,   0.,  12.],
+  [  0.,   0.,   1.,  18.]])
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_QUOTE
+.
+.               string value:            numerical value:
+.                do one-hot encoding       do nothing
+.              ------------------------  -------------------
+.              {'city': 'Dubai',         'temperature': 33.},
+.              {'city': 'London',        'temperature': 12.},
+.              {'city': 'San Francisco', 'temperature': 18.},
+.
+.
+.
+.           one-hot encoding for 'city'   no encoding for 'temperature'
+.                 --------------              --
+.       array([[  1.,   0.,   0.,             33.],
+.              [  0.,   1.,   0.,             12.],
+.              [  0.,   0.,   1.,             18.]])
+.
+#+END_QUOTE
+
+*** Imputer
+    http://scikit-learn.org/stable/modules/preprocessing.html#imputation-of-missing-values
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      Imputer(missing_values=’NaN’,   #<- what's a missing value in original ndarray
+              strategy=’mean’,        #<- with what value should missing_values change
+              axis=0,                 #<- 0: strategy on column; 1: strategy on row;
+              verbose=0,
+              copy=True)              #<- False: do change in original ndarray;
+                                      #   True: do change on a copy.
+    #+END_SRC
+
+
+    Note that, the place holder like 'NaN' or 'blank' with their value specified
+    in 'fitting' process NOT the 'transform' process.
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      from sklearn.preprocessing import Imputer
+      imp = Imputer(missing_values='NaN', strategy='mean', axis=0)
+
+      # get 'nan' of each column
+      #<- for col_1, nan=(1+5)/2=3;
+      #<- for col_2, nan=(2+3+6)/3=3.66666667;
+      imp.fit(np.array([[1,2],[np.nan, 3],[5,6]]))
+
+
+      #< error, must same shape with ndarray passed into fit
+      #  after_imp = imp.transform(np.array([[np.nan, np.nan, 3],[4,5,np.nan],[7,8,9]]))
+
+      # change 'nan' of each column
+      #<- for col_1, nan=3;
+      #<- for col_2, nan=3.66666667;
+      after_imp = imp.transform(np.array([[np.nan, np.nan],[4,np.nan],[7,8]]))
+      after_imp
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[268]:
+    #+BEGIN_EXAMPLE
+      array([[ 3.        ,  3.66666667],
+      [ 4.        ,  3.66666667],
+      [ 7.        ,  8.        ]])
+    #+END_EXAMPLE
+    :END:
+
+** pandas
+*** pd.get_dummies
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      # declaration of ~pandas.get_dummies()~
+      pandas.get_dummies(data,
+                         prefix=None,
+                         prefix_sep='_',
+                         dummy_na=False,
+                         columns=None,
+                         sparse=False,
+                         drop_first=False,
+                         dtype=None)
+    #+END_SRC
+    Convert categorical variable into dummy/indicator variables
+**** from string to one-hot encoding
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  import pandas as pd
+  s = pd.Series(list('abcdaa'))
+  gd = pd.get_dummies(s)
+  gd
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[224]:
+#+BEGIN_EXAMPLE
+  a  b  c  d
+  0  1  0  0  0
+  1  0  1  0  0
+  2  0  0  1  0
+  3  0  0  0  1
+  4  1  0  0  0
+  5  1  0  0  0
+#+END_EXAMPLE
+:END:
+
+**** from dict to one-hot encoding
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  df = pd.DataFrame({'A':['a','b','c'], 'B':['b','a','c'], 'C':[1,2,3]})
+  df
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[227]:
+#+BEGIN_EXAMPLE
+  A  B  C
+  0  a  b  1
+  1  b  a  2
+  2  c  c  3
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  gd = pd.get_dummies(df)
+  gd
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[232]:
+#+BEGIN_EXAMPLE
+  C  A_a  A_b  A_c  B_a  B_b  B_c
+  0  1    1    0    0    0    1    0
+  1  2    0    1    0    1    0    0
+  2  3    0    0    1    0    0    1
+#+END_EXAMPLE
+:END:
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  gd = pd.get_dummies(df['A'], drop_first=True)
+  gd
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[239]:
+:END:
+**** from boolean-like column to one-hot encoding
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  import pandas as pd
+  df = pd.DataFrame({'A':['good','bad','bad','bad','good']})
+  col = pd.get_dummies(df['A'])
+  col
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[242]:
+#+BEGIN_EXAMPLE
+  bad  good
+  0    0     1
+  1    1     0
+  2    1     0
+  3    1     0
+  4    0     1
+#+END_EXAMPLE
+:END:
+
+Here we need to drop the fist column, to get a 0/1 representation:
+
+ - 1: good
+ - 2: bad
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  df = pd.DataFrame({'A':['good','bad','bad','bad','good']})
+  col = pd.get_dummies(df['A'], drop_first=True)
+  df['A_dum'] = col
+  df
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[243]:
+#+BEGIN_EXAMPLE
+  A  A_dum
+  0  good      1
+  1   bad      0
+  2   bad      0
+  3   bad      0
+  4  good      1
+#+END_EXAMPLE
+:END:
+** numpy
+*** np.isnan()
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      # declaration of numpy.isnan
+      numpy.isnan(x,                   # array_like, input array
+                  /,
+                  out=None,
+                  ,*,
+                  where=True,          # array_like, optional, Values of True
+                                       # indicate to calculate the ufunc at that
+                                       # position, values of False indicate to leave
+                                       # the value in the output alone.
+                  casting='same_kind',
+                  order='K',
+                  dtype=None,
+                  subok=True[, signature, extobj])
+    #+END_SRC
+Test element-wise for NaN and return result as a boolean array.
+
+*** np.any()
+    ~np.any(a,)~ means ~np.is_there_True_exist_along_the_given_axis()~
+
+Test whether any array element along a given axis evaluates to True. Returns
+single boolean unless axis is not None
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      numpy.any(a,
+                axis=None, # None: for all elements;
+                           # 0: along column;
+                           # 1: along row
+                out=None,
+                keepdims=<class 'numpy._globals._NoValue'>)
+    #+END_SRC
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      boolarr = np.arange(0, 9, 1).reshape((3,3))
+      print(boolarr)
+      has_true_all = np.any(boolarr>5)
+      print(has_true_all)
+      has_true_row = np.any(boolarr>5, axis=0)
+      print(has_true_row)
+      has_true_col = np.any(boolarr>5, axis=1)
+      print(has_true_col)
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[263]:
+    :END:

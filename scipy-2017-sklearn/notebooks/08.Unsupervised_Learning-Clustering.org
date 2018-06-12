@@ -9,316 +9,458 @@ import numpy as np
 
 #+RESULTS:
 :RESULTS:
-# Out[35]:
+# Out[187]:
 :END:
 
-* Unsupervised Learning Part 2 -- Clustering¶
+* Unsupervised Learning Part 2 -- Clustering
+*** what is clustering
+    Clustering is the task of gathering samples into groups of similar
+    samples according to some predefined similarity or distance (dissimilarity)
+    measure, such as the Euclidean distance.
 
-Clustering is the task of gathering samples into groups of similar
-samples according to some predefined similarity or distance (dissimilarity)
-measure, such as the Euclidean distance.
-​
-[[file:figures/clustering.png]]
+    [[file:figures/clustering.png]]
 
-In this section we will explore a basic clustering task on some synthetic and
-real-world datasets.
+    In this section we will explore a basic clustering task on some synthetic and
+    real-world datasets.
 
-Here are some common applications of clustering algorithms:
+*** application of clustering
+    Here are some common applications of clustering algorithms:
 
-- Compression for data reduction
-- Summarizing data as a reprocessing step for recommender systems
-- Similarly:
-   - grouping related web news (e.g. Google News) and web search results
-   - grouping related stock quotes for investment portfolio management
-   - building customer profiles for market analysis
-- Building a code book of prototype samples for unsupervised feature extraction
+    - Compression for data reduction
+    - Summarizing data as a reprocessing step for recommender systems
+    - Similarly:
+      - grouping related web news (e.g. Google News) and web search results
+      - grouping related stock quotes for investment portfolio management
+      - building customer profiles for market analysis
+    - Building a code book of prototype samples for unsupervised feature extraction
 
-Let's start by creating a simple, 2-dimensional, synthetic dataset:
+** K-means
+*** what is K-means
+    Let's start by creating a simple, 2-dimensional, synthetic dataset:
 
+    In the scatter plot above, we can see three separate groups of data points and
+    we would like to recover them using clustering -- think of "*discovering*" the
+    class labels that we already take for granted in a classification task.
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.datasets import make_blobs
-X, y = make_blobs(random_state=42)
-X.shape
-plt.scatter(X[:, 0], X[:, 1]);
-#+END_SRC
+    Even if the groups are obvious in the data, it is hard to find them when the
+    data lives in a high-dimensional space, which we can't visualize in a single
+    histogram or scatterplot.
 
-#+RESULTS:
-:RESULTS:
-# Out[37]:
-[[file:./obipy-resources/8573E4F.png]]
-:END:
+    Now we will use one of the simplest clustering algorithms, *K-means*. This is an
+    *iterative algorithm(or called lazy algorithm)* which searches for three cluster
+    centers such that the distance from each point to its cluster is minimized. The
+    standard implementation of K-means uses the Euclidean distance, which is why we
+    want to make sure that all *our variables are measured on the same scale* if we
+    are working with real-world datastets. In the previous notebook, we talked about
+    one technique to achieve this, namely, ~standardization~.
 
-In the scatter plot above, we can see three separate groups of data points and
-we would like to recover them using clustering -- think of "discovering" the
-class labels that we already take for granted in a classification task.
+    Question:
+    what would you expect the output to look like?
 
-Even if the groups are obvious in the data, it is hard to find them when the
-data lives in a high-dimensional space, which we can't visualize in a single
-histogram or scatterplot.
+*** creating
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      from sklearn.cluster import KMeans
+      kmeans = KMeans(n_clusters=3, random_state=42)
+    #+END_SRC
 
-Now we will use one of the simplest clustering algorithms, K-means. This is an
-iterative algorithm which searches for three cluster centers such that the
-distance from each point to its cluster is minimized. The standard
-implementation of K-means uses the Euclidean distance, which is why we want to
-make sure that all our variables are measured on the same scale if we are
-working with real-world datastets. In the previous notebook, we talked about one
-technique to achieve this, namely, standardization.
+    #+RESULTS:
+    :RESULTS:
+    # Out[188]:
+    :END:
 
+    We can get the cluster labels either by calling ~fit~ and then accessing the
+    ~labels_~ attribute of the K means estimator, or by calling ~fit_predict~. Either
+    way, the result contains the ID of the cluster that each point is assigned to.
 
+*** fitting and predict
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      labels = kmeans.fit_predict(X)
+      labels
+    #+END_SRC
 
-Question:
-what would you expect the output to look like?
+    #+RESULTS:
+    :RESULTS:
+    # Out[189]:
+    #+BEGIN_EXAMPLE
+      array([1, 2, 1, 2, 0, 2, 1, 2, 2, 2, 2, 1, 0, 1, 1, 2, 0, 2, 2, 2, 0, 0, 1,
+      0, 1, 2, 2, 0, 0, 2, 2, 1, 2, 1, 2, 1, 1, 2, 1, 2, 1, 1, 0, 1, 2, 0,
+      0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 2, 2, 0, 2, 1, 2, 1, 2, 2, 2, 0, 2,
+      1, 1, 0, 1, 0, 0, 2, 0, 1, 2, 0, 0, 0, 2, 0, 1, 1, 1, 0, 0, 0, 1, 2,
+      1, 0, 2, 1, 0, 1, 0, 0], dtype=int32)
+    #+END_EXAMPLE
+    :END:
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.cluster import KMeans
-kmeans = KMeans(n_clusters=3, random_state=42)
-#+END_SRC
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      np.all(y == labels)
+    #+END_SRC
 
-#+RESULTS:
-:RESULTS:
-# Out[38]:
-:END:
+    #+RESULTS:
+    :RESULTS:
+    # Out[190]:
+    : False
+    :END:
 
-We can get the cluster labels either by calling fit and then accessing the
-labels_ attribute of the K means estimator, or by calling fit_predict. Either
-way, the result contains the ID of the cluster that each point is assigned to.
+    Let's visualize the assignments that have been found
 
+*** comparing to true labels using confusion_matrix and accuracy_score :EXERCISE:
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      plt.scatter(X[:, 0], X[:, 1], c=labels);
+    #+END_SRC
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-labels = kmeans.fit_predict(X)
-labels
-#+END_SRC
+    #+RESULTS:
+    :RESULTS:
+    # Out[191]:
+    [[file:./obipy-resources/25041ixO.png]]
+    :END:
 
-#+RESULTS:
-:RESULTS:
-# Out[39]:
-#+BEGIN_EXAMPLE
-  array([1, 0, 2, 0, 1, 0, 2, 0, 0, 2, 2, 1, 1, 2, 2, 1, 1, 2, 1, 1, 2, 1,
-  1, 2, 2, 2, 0, 1, 1, 1, 1, 0, 0, 1, 2, 2, 2, 2, 0, 0, 1, 2, 0, 2,
-  2, 0, 1, 1, 1, 0, 0, 0, 2, 1, 1, 1, 2, 2, 0, 2, 1, 0, 1, 0, 1, 1,
-  0, 1, 0, 0, 0, 1, 1, 2, 0, 1, 0, 1, 0, 0, 2, 0, 2, 1, 2, 2, 2, 0,
-  2, 0, 0, 0, 2, 0, 2, 2, 2, 0, 1, 2], dtype=int32)
-#+END_EXAMPLE
-:END:
+    Compared to the true labels:
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-np.all(y == labels)
-#+END_SRC
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      plt.scatter(X[:, 0], X[:, 1], c=y);
+    #+END_SRC
 
-#+RESULTS:
-:RESULTS:
-# Out[40]:
-: False
-:END:
+    #+RESULTS:
+    :RESULTS:
+    # Out[192]:
+    [[file:./obipy-resources/25041v7U.png]]
+    :END:
 
-Let's visualize the assignments that have been found
+    Here, we are probably satisfied with the clustering results. But in general we
+    might want to have a more quantitative evaluation. How about comparing our
+    cluster labels with the ground truth we got when generating the blobs?
 
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      from sklearn.metrics import confusion_matrix, accuracy_score
+      print('Accuracy score:', accuracy_score(y, labels))
+      print(confusion_matrix(y, labels))
+      np.mean(y == labels)
+    #+END_SRC
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-plt.scatter(X[:, 0], X[:, 1], c=labels);
-#+END_SRC
+    #+RESULTS:
+    :RESULTS:
+    # Out[194]:
+    : 0.34000000000000002
+    :END:
 
-#+RESULTS:
-:RESULTS:
-# Out[41]:
-[[file:./obipy-resources/8573RCM.png]]
-:END:
+    But we actually do 100% correctly, only due to different label number, we get
+    only 33% correctly:
+    - standard answer: [2,1,3]
+    - we give: [1,2,3]
 
-Compared to the true labels:
+    But for every elements we group them correctly.
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-plt.scatter(X[:, 0], X[:, 1], c=y);
-#+END_SRC
+    #+BEGIN_QUOTE
+    EXERCISE: After looking at the "True" label array y, and the scatterplot and
+    labels above, can you figure out why our computed accuracy is 0.0, not 1.0, and
+    can you fix it?
+    #+END_QUOTE
 
-#+RESULTS:
-:RESULTS:
-# Out[42]:
-[[file:./obipy-resources/8573eMS.png]]
-:END:
-
-Here, we are probably satisfied with the clustering results. But in general we
-might want to have a more quantitative evaluation. How about comparing our
-cluster labels with the ground truth we got when generating the blobs?
-
-
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.metrics import confusion_matrix, accuracy_score
-print('Accuracy score:', accuracy_score(y, labels))
-print(confusion_matrix(y, labels))
-np.mean(y == labels)
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[43]:
-: 0.0
-:END:
-
-EXERCISE: After looking at the "True" label array y, and the scatterplot and
-labels above, can you figure out why our computed accuracy is 0.0, not 1.0, and
-can you fix it?
-
-Even though we recovered the partitioning of the data into clusters perfectly,
-the cluster IDs we assigned were arbitrary, and we can not hope to recover them.
-Therefore, we must use a different scoring metric, such as adjusted_rand_score,
-which is invariant to permutations of the labels:
+*** comparing to true labels using adjusted_rand_score
+    Even though we recovered the partitioning of the data into clusters perfectly,
+    the cluster IDs we assigned were arbitrary, and we can not hope to recover them.
+    Therefore, we must use a different scoring metric, such as adjusted_rand_score,
+    which is invariant to permutations of the labels:
 
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.metrics import adjusted_rand_score
-adjusted_rand_score(y, labels)
-#+END_SRC
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      from sklearn.metrics import adjusted_rand_score
+      adjusted_rand_score(y, labels)
+    #+END_SRC
 
-#+RESULTS:
-:RESULTS:
-# Out[44]:
-: 1.0
-:END:
+    #+RESULTS:
+    :RESULTS:
+    # Out[44]:
+    : 1.0
+    :END:
 
-One of the "short-comings" of K-means is that we have to specify the number of
-clusters, which we often don't know apriori. For example, let's have a look what
-happens if we set the number of clusters to 2 in our synthetic 3-blob dataset:
+*** short-comming-1 of K-means
+    *specify the number of clusters*
 
-
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-kmeans = KMeans(n_clusters=2, random_state=42)
-labels = kmeans.fit_predict(X)
-plt.scatter(X[:, 0], X[:, 1], c=labels);
-kmeans.cluster_centers_
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[45]:
-#+BEGIN_EXAMPLE
-  array([[ 0.86236563,  5.48955564],
-  [-6.95170962, -6.67621669]])
-#+END_EXAMPLE
-[[file:./obipy-resources/8573rWY.png]]
-:END:
-
-** The Elbow Method
-The Elbow method is a "rule-of-thumb" approach to finding the optimal number of
-clusters. Here, we look at the cluster dispersion for different values of k:
+    One of the "short-comings" of K-means is that we have to *specify the number of
+    clusters*, which we often don't know apriori. For example, let's have a look what
+    happens if we set the number of clusters to 2 in our synthetic 3-blob dataset:
 
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-distortions = []
-for i in range(1, 11):
-    km = KMeans(n_clusters=i,
-                random_state=0)
-    km.fit(X)
-    distortions.append(km.inertia_)
-plt.plot(range(1, 11), distortions, marker='o')
-plt.xlabel('Number of clusters')
-plt.ylabel('Distortion')
-plt.show()
-#+END_SRC
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      kmeans = KMeans(n_clusters=2, random_state=42)
+      labels = kmeans.fit_predict(X)
+      plt.scatter(X[:, 0], X[:, 1], c=labels);
+      kmeans.cluster_centers_
+    #+END_SRC
 
-#+RESULTS:
-:RESULTS:
-# Out[46]:
-[[file:./obipy-resources/85734ge.png]]
-:END:
+    #+RESULTS:
+    :RESULTS:
+    # Out[195]:
+    #+BEGIN_EXAMPLE
+      array([[ 5.60396367,  3.94805847],
+      [-6.00060712, -7.45465799]])
+    #+END_EXAMPLE
+    [[file:./obipy-resources/250418Fb.png]]
+    :END:
 
-Then, we pick the value that resembles the "pit of an elbow." As we can see,
-this would be k=3 in this case, which makes sense given our visual expection of
-the dataset previously.
+*** The Elbow Method: solve the short-coming-1  using ~km.inertia_~
+    The Elbow method is a "rule-of-thumb" approach to finding the optimal number of
+    clusters. Here, we look at the cluster ~dispersion~ for different values of k:
 
-Clustering comes with assumptions: A clustering algorithm finds clusters by
-making assumptions with samples should be grouped together. Each algorithm makes
-different assumptions and the quality and interpretability of your results will
-depend on whether the assumptions are satisfied for your goal. For K-means
-clustering, the model is that all clusters have equal, spherical variance.
+    #+BEGIN_QUOTE
+    ~dispersion~
+    In statistics, dispersion (also called variability, scatter, or spread) is the
+    extent to which a distribution is stretched or squeezed. Common examples of
+    measures of statistical dispersion are the variance, standard deviation, and
+    interquartile range
+    #+END_QUOTE
 
-In general, there is no guarantee that structure found by a clustering algorithm
-has anything to do with what you were interested in.
+    here we use ~km.inertia_~ describe the ~dispersion(spread)~
+    #+BEGIN_QUOTE
+    ~km.inertia_~ : float, Sum of squared distances of samples to their closest
+    cluster center.
 
-We can easily create a dataset that has non-isotropic clusters, on which kmeans
-will fail:
+    ~inertia_~ is one attribute of km model after fitting training dataset, it will
+    give you some 'feeling' of connection strength of elements inside each group,
+    which returned as 'label' by km model after fitting training dataset.
+
+    #+END_QUOTE
 
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-plt.figure(figsize=(12, 12))
-n_samples = 1500
-random_state = 170
-X, y = make_blobs(n_samples=n_samples, random_state=random_state)
-# Incorrect number of clusters
-y_pred = KMeans(n_clusters=2, random_state=random_state).fit_predict(X)
-plt.subplot(221)
-plt.scatter(X[:, 0], X[:, 1], c=y_pred)
-plt.title("Incorrect Number of Blobs")
-# Anisotropicly distributed data
-transformation = [[0.60834549, -0.63667341], [-0.40887718, 0.85253229]]
-X_aniso = np.dot(X, transformation)
-y_pred = KMeans(n_clusters=3, random_state=random_state).fit_predict(X_aniso)
-plt.subplot(222)
-plt.scatter(X_aniso[:, 0], X_aniso[:, 1], c=y_pred)
-plt.title("Anisotropicly Distributed Blobs")
-# Different variance
-X_varied, y_varied = make_blobs(n_samples=n_samples,
-                                cluster_std=[1.0, 2.5, 0.5],
-                                random_state=random_state)
-y_pred = KMeans(n_clusters=3, random_state=random_state).fit_predict(X_varied)
-plt.subplot(223)
-plt.scatter(X_varied[:, 0], X_varied[:, 1], c=y_pred)
-plt.title("Unequal Variance")
-# Unevenly sized blobs
-X_filtered = np.vstack((X[y == 0][:500], X[y == 1][:100], X[y == 2][:10]))
-y_pred = KMeans(n_clusters=3,
-                random_state=random_state).fit_predict(X_filtered)
-plt.subplot(224)
-plt.scatter(X_filtered[:, 0], X_filtered[:, 1], c=y_pred)
-plt.title("Unevenly Sized Blobs")
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      distortions = []
+      for i in range(1, 11):
+          km = KMeans(n_clusters=i,
+                      random_state=0)
+          km.fit(X)
+          distortions.append(km.inertia_)
+          plt.plot(range(1, 11), distortions, marker='o')
+          plt.xlabel('Number of clusters')
+          plt.ylabel('Distortion')
+          plt.show()
+    #+END_SRC
 
-#+END_SRC
+    #+RESULTS:
+    :RESULTS:
+    # Out[196]:
+    [[file:./obipy-resources/25041JQh.png]]
+    :END:
 
-#+RESULTS:
-:RESULTS:
-# Out[47]:
-: Text(0.5,1,'Unevenly Sized Blobs')
-[[file:./obipy-resources/8573Frk.png]]
-:END:
+    Then, we pick the value that resembles the "*pit of an elbow*." As we can see,
+    this would be *k=3* in this case, which makes sense given our visual expection of
+    the dataset previously.
 
-​
+*** short-comming 2~4 of K-means
+    Clustering comes with assumptions:
+
+    A clustering algorithm finds clusters by making assumptions with samples should
+    be grouped together. Each algorithm makes different assumptions and the quality
+    and interpretability of your results will depend on whether the assumptions are
+    satisfied for your goal.
+
+    For ~K-means clustering~, the model is that all clusters have:
+    1. *equal* variance.
+    2. *spherical* variance.
+    3. *balanced* sized blobs
+
+    #+BEGIN_QUOTE
+    So we have 4 short-comings of K-means:
+    1. Incorrect number of clusters <<< solved by elbow-method
+    2. Anisotropicly distributed data
+    3. Different variance
+    4. Unevenly sized blobs
+    #+END_QUOTE
+
+    In general, there is no guarantee that structure found by a clustering algorithm
+    has anything to do with what you were interested in.
+
+    We can easily create a dataset that has non-isotropic clusters, on which kmeans
+    will fail:
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      plt.figure(figsize=(12, 12))
+
+      #----------------------------------------
+      # 1. Incorrect number of clusters
+      n_samples = 1500
+      random_state = 170
+      X, y = make_blobs(n_samples=n_samples, random_state=random_state)
+
+      ## return 0/1 array because the 'n_clusters=2'
+      y_pred = KMeans(n_clusters=2, random_state=random_state).fit_predict(X)
+
+      ## split figure into 2*2 subplots, and use the 1st as default subplot to scatter or plot
+      ##    subplot(nrows, ncols, index)
+      ##    subplot(    2,     2,     1)
+      ##    subplot(221)
+      plt.subplot(221)
+
+      plt.scatter(X[:, 0], X[:, 1], c=y_pred)
+      plt.title("Incorrect Number of Blobs")
+
+      #----------------------------------------
+      # 2. Anisotropicly distributed data
+
+      ## linear transformation on data points
+      transformation = [[0.60834549, -0.63667341], [-0.40887718, 0.85253229]]
+      X_aniso = np.dot(X, transformation)
+      y_pred = KMeans(n_clusters=3, random_state=random_state).fit_predict(X_aniso)
+      plt.subplot(222)
+      plt.scatter(X_aniso[:, 0], X_aniso[:, 1], c=y_pred)
+      plt.title("Anisotropicly Distributed Blobs")
+
+      #----------------------------------------
+      # 3. Different variance
+      X_varied, y_varied = make_blobs(n_samples=n_samples,
+                                      cluster_std=[1.0, 2.5, 0.5],
+                                      random_state=random_state)
+      y_pred = KMeans(n_clusters=3, random_state=random_state).fit_predict(X_varied)
+      plt.subplot(223)
+      plt.scatter(X_varied[:, 0], X_varied[:, 1], c=y_pred)
+      plt.title("Unequal Variance")
+
+
+      #----------------------------------------
+      # 4. Unevenly sized blobs
+      X_filtered = np.vstack((X[y == 0][:500], X[y == 1][:100], X[y == 2][:10]))
+      y_pred = KMeans(n_clusters=3,
+                      random_state=random_state).fit_predict(X_filtered)
+      plt.subplot(224)
+      plt.scatter(X_filtered[:, 0], X_filtered[:, 1], c=y_pred)
+      plt.title("Unevenly Sized Blobs")
+
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[198]:
+    : <matplotlib.text.Text at 0x7f9c489e5d68>
+    [[file:./obipy-resources/25041jkt.png]]
+    :END:
+
+    ​
 ** Some Notable Clustering Routines
-The following are two well-known clustering algorithms.
+   May be DBSCAN is the best one
 
-- ~sklearn.cluster.KMeans~ : The simplest, yet effective clustering algorithm.
-  Needs to be provided with the number of clusters in advance, and assumes that
-  the data is normalized as input (but use a PCA model as preprocessor).
-- ~sklearn.cluster.MeanShift~ : Can find better looking clusters than KMeans but
-  is not scalable to high number of samples.
-- ~sklearn.cluster.DBSCAN~ : Can detect irregularly shaped clusters based on
-  density, i.e. sparse regions in the input space are likely to become
-  inter-cluster boundaries. Can also detect outliers (samples that are not part
-  of a cluster).
-- ~sklearn.cluster.AffinityPropagation~ : Clustering algorithm based on message
-  passing between data points.
-- ~sklearn.cluster.SpectralClustering~ : KMeans applied to a projection of the
-  normalized graph Laplacian: finds normalized graph cuts if the affinity matrix
-  is interpreted as an adjacency matrix of a graph.
-- ~sklearn.cluster.Ward~ : Ward implements hierarchical clustering based on the
-  Ward algorithm, a variance-minimizing approach. At each step, it minimizes the
-  sum of squared differences within all clusters (inertia criterion).
+   The following are two well-known clustering algorithms.
 
-Of these, Ward, SpectralClustering, DBSCAN and Affinity propagation can also
-work with precomputed similarity matrices.
+   - ~sklearn.cluster.KMeans~ : The simplest, yet effective clustering algorithm.
+     Needs to be provided with the number of clusters in advance, and assumes that
+     the data is normalized as input (but use a PCA model as preprocessor).
+   - ~sklearn.cluster.MeanShift~ : Can find better looking clusters than KMeans but
+     is not scalable to high number of samples.
+   - ~sklearn.cluster.DBSCAN~ : Can detect irregularly shaped clusters *based on
+     density*, i.e. sparse regions in the input space are likely to become
+     inter-cluster boundaries. Can also detect outliers (samples that are not part
+     of a cluster).
+   - ~sklearn.cluster.AffinityPropagation~ : Clustering algorithm based on message
+     passing between data points.
+   - ~sklearn.cluster.SpectralClustering~ : KMeans applied to a projection of the
+     *normalized graph Laplacian*: finds normalized graph cuts if the affinity matrix
+     is interpreted as an adjacency matrix of a graph.
+   - ~sklearn.cluster.Ward~ : Ward implements *hierarchical clustering* based on the
+     Ward algorithm, a variance-minimizing approach. At each step, it minimizes the
+     sum of squared differences within all clusters (*inertia* criterion).
 
-[[file:figures/cluster_comparison.png]]
+   Of these, Ward, SpectralClustering, DBSCAN and Affinity propagation can also
+   work with *precomputed similarity matrices*.
 
-EXERCISE: digits clustering: Perform K-means clustering on the digits data,
-searching for ten clusters. Visualize the cluster centers as images (i.e.
-reshape each to 8x8 and use plt.imshow) Do the clusters seem to be correlated
-with particular digits? What is the adjusted_rand_score? Visualize the projected
-digits as in the last notebook, but this time use the cluster labels as the
-color. What do you notice?
+   [[file:figures/cluster_comparison.png]]
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.datasets import load_digits
-digits = load_digits()
-# ...
-#+END_SRC
+   EXERCISE: digits clustering: Perform K-means clustering on the digits data,
+   searching for ten clusters. Visualize the cluster centers as images (i.e.
+   reshape each to 8x8 and use plt.imshow) Do the clusters seem to be correlated
+   with particular digits? What is the adjusted_rand_score? Visualize the projected
+   digits as in the last notebook, but this time use the cluster labels as the
+   color. What do you notice?
 
-# %load solutions/08B_digits_clustering.py
+   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+     from sklearn.datasets import load_digits
+     digits = load_digits()
+     # ...
+   #+END_SRC
+
+   # %load solutions/08B_digits_clustering.py
+* Misc tools
+** scikit-learn
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.linear_model import LogisticRegression
+    5. from sklearn.linear_model import LinearRegression
+    6. from sklearn.neighbors import KNeighborsClassifier
+    7. from sklearn.neighbors import KNeighborsRegressor
+    8. from sklearn.preprocessing import StandardScaler
+    9. from sklearn.decomposition import PCA
+    10. from sklearn.metrics import confusion_matrix, accuracy_score
+    11. from sklearn.metrics import adjusted_rand_score
+    12. from sklearn.cluster import KMeans
+    13. sklearn.cluster.KMeans
+    14. sklearn.cluster.MeanShift
+    15. sklearn.cluster.DBSCAN <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    16. sklearn.cluster.AffinityPropagation
+    17. sklearn.cluster.SpectralClustering
+    18. sklearn.cluster.Ward
+    19. from sklearn.metrics import confusion_matrix
+    20. from sklearn.metrics import accuracy_score
+    21. from sklearn.metrics import adjusted_rand_score
+    #+END_QUOTE
+*** sklearn.metrics.confusion_matrix
+    http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+
+    Confusion matrix usage to evaluate the quality of the output of a classifier.
+
+    - the *diagonal* elements represent *the number* of points for which the predicted
+      label is *equal* to the true label.
+    - *off-diagonal* elements are those that are *mislabeled* by the classifier.
+
+    The higher the diagonal values of the confusion matrix the better, indicating
+    many correct predictions.
+
+    #+BEGIN_QUOTE
+    .                                          predicted label
+    .                                               |
+    .                                   ---------------------------------
+    .                     |            | setosa | versicolor | virginica |
+    .                     |------------+--------+------------+-----------|
+    .                  |  | setosa     |     13 |          0 |         0 |
+    .  true label ---> |  | versicolor |      0 |         10 |         6 |
+    .                  |  | virginica  |      0 |          0 |         9 |
+
+    #+END_QUOTE
+
+*** sklearn.metrics.accuracy_score
+    #+BEGIN_QUOTE
+    >>> import numpy as np
+    >>> from sklearn.metrics import accuracy_score
+    >>> y_pred = [0, 2, 1, 3]
+    >>> y_true = [0, 1, 2, 3]
+    >>> accuracy_score(y_true, y_pred)
+    0.5
+    >>> accuracy_score(y_true, y_pred, normalize=False)
+    2
+    #+END_QUOTE
+*** sklearn.metrics.adjusted_rand_score
+    some like the comparing of two set, we just compare the content of set,
+    ignore the order of set.
+
+    #+BEGIN_QUOTE
+    >>> from sklearn.metrics.cluster import adjusted_rand_score
+    >>> adjusted_rand_score([0, 0, 1, 1], [0, 0, 1, 1])
+    1.0
+    >>> adjusted_rand_score([0, 0, 1, 1], [1, 1, 0, 0])
+    1.0
+    #+END_QUOTE
+*** ML fn of this note
+    from sklearn.cluster import KMeans
+    kmeans = KMeans(n_clusters=3, random_state=42)
+    labels = kmeans.fit_predict(X) #<- same with ~kmeans.fit(X).predict(X)~
+
+
+    km = KMeans(n_clusters=i,
+    random_state=0)
+    km.inertia_
+
+    y_pred = KMeans(n_clusters=2, random_state=random_state).fit_predict(X) #<- return [0,0,1,0,1,...,0,1,0,0]
+    plt.scatter(X[:, 0], X[:, 1], c=y_pred) #<- both array of boolean and array of 0/1 can be passed to parameter 'c'
+
+    X_varied, y_varied = make_blobs(n_samples=n_samples,
+    cluster_std=[1.0, 2.5, 0.5],
+    random_state=random_state)

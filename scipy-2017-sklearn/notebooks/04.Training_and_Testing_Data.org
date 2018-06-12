@@ -10,15 +10,15 @@ import numpy as np
 
 #+RESULTS:
 :RESULTS:
-# Out[91]:
+# Out[42]:
 :END:
 
 * Training and Testing Data
+*** load datasets, create estimator by ~load_iris()~ and ~KNeighborsClassifier()~
 To evaluate how well our supervised models generalize, we can split our data
 into a training and a test set:
 
 [[file:figures/train_test_split_matrix.png]]
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.datasets import load_iris
@@ -32,26 +32,15 @@ classifier = KNeighborsClassifier()
 
 #+RESULTS:
 :RESULTS:
-# Out[96]:
+# Out[43]:
 :END:
 
 Thinking about how machine learning is normally performed, the idea of a
-train/test split makes sense. Real world systems train on the data they have,
-and as other data comes in (from customers, sensors, or other sources) the
-classifier that was trained must predict on fundamentally new data. We can
-simulate this during training using a train/test split - the test data is a
-simulation of "future data" which will come into the system during production.
+train/test split makes sense.
 
-Specifically for iris, the 150 labels in iris are sorted, which means that if we
-split the data using a proportional split, this will result in fudamentally
-altered class distributions. For instance, if we'd perform a common 2/3 training
-data and 1/3 test data split, our training dataset will only consists of flower
-classes 0 and 1 (Setosa and Versicolor), and our test set will only contain
-samples with class label 2 (Virginica flowers).
-
-Under the assumption that all samples are independent of each other (in contrast
-time series data), we want to randomly shuffle the dataset before we split the
-dataset as illustrated above.
+Under the assumption that all samples are independent of each other (*in
+contrast time series data*), we want to *randomly shuffle the dataset* before we
+split the dataset as illustrated above.
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 y
@@ -59,7 +48,7 @@ y
 
 #+RESULTS:
 :RESULTS:
-# Out[97]:
+# Out[44]:
 #+BEGIN_EXAMPLE
   array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -71,6 +60,7 @@ y
 #+END_EXAMPLE
 :END:
 
+*** split datasets ~train_test_split()~
 Now we need to split the data into training and testing. Luckily, this is a
 common pattern in machine learning and scikit-learn has a pre-built function to
 split data into training and testing sets for you. Here, we use 50% of the data
@@ -78,41 +68,54 @@ as training, and 50% testing. 80% and 20% is another common split, but there are
 no hard and fast rules. The most important thing is to fairly evaluate your
 system on data it has not seen during training!
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.model_selection import train_test_split
+*** stratify split vs. non-stratify split
+    |--------------------------------------------------------+------------------------------------------------|
+    | train_test_split(~stratify=y~)                         | train_test_split(~stratify=None~)              |
+    | 'y' means split by the related proportion of 'y' label |                                                |
+    |--------------------------------------------------------+------------------------------------------------|
+    | All: [ 33.33333333  33.33333333  33.33333333]          | All: [ 33.33333333  33.33333333  33.33333333]  |
+    | Training: [ 33.33333333  33.33333333  33.33333333]     | Training: [ 30.66666667  40.     29.33333333]  |
+    | Test: [ 33.33333333  33.33333333  33.33333333]         | Test: [ 36.          26.66666667  37.33333333] |
+    |                                                        |                                                |
+    |--------------------------------------------------------+------------------------------------------------|
+    | better for small dataset                               | better for large dataset                       |
 
-train_X, test_X, train_y, test_y = train_test_split(X, y,
-                                                    train_size=0.5,
-                                                    test_size=0.5,
-                                                    random_state=123)
-print("Labels for training and testing data")
-print(train_y)
-print(test_y)
+**** non-stratify
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      from sklearn.model_selection import train_test_split
+
+      train_X, test_X, train_y, test_y = train_test_split(X, y,
+                                                          train_size=0.5,
+                                                          test_size=0.5,
+                                                          random_state=123)
+      print("Labels for training and testing data")
+      print(train_y)
+      print(test_y)
+      print('All:', np.bincount(y) / float(len(y)) * 100.0)
+      print('Training:', np.bincount(train_y) / float(len(train_y)) * 100.0)
+      print('Test:', np.bincount(test_y) / float(len(test_y)) * 100.0)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[98]:
+# Out[45]:
 :END:
 
-Tip: Stratified Split
+All: [ 33.33333333  33.33333333  33.33333333]
+Training: [ 30.66666667  40.          29.33333333]
+Test: [ 36.          26.66666667  37.33333333]
 
+**** stratify
 Especially for relatively small datasets, it's better to stratify the split.
+
+#+BEGIN_QUOTE
 Stratification means that we maintain the original class proportion of the
-dataset in the test and training sets. For example, after we randomly split the
-dataset as shown in the previous code example, we have the following class
-proportions in percent:
+dataset in the test and training sets.
+#+END_QUOTE
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-print('All:', np.bincount(y) / float(len(y)) * 100.0)
-print('Training:', np.bincount(train_y) / float(len(train_y)) * 100.0)
-print('Test:', np.bincount(test_y) / float(len(test_y)) * 100.0)
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[99]:
-:END:
+For example, after we randomly split the dataset as shown in the previous code
+example, we have the following class proportions in percent:
 
 So, in order to stratify the split, we can pass the label array as an additional
 option to the train_test_split function:
@@ -131,9 +134,14 @@ print('Test:', np.bincount(test_y) / float(len(test_y)) * 100.0)
 
 #+RESULTS:
 :RESULTS:
-# Out[100]:
+# Out[46]:
 :END:
 
+All: [ 33.33333333  33.33333333  33.33333333]
+Training: [ 33.33333333  33.33333333  33.33333333]
+Test: [ 33.33333333  33.33333333  33.33333333]
+
+*** get model by ~estimator.fit~ and predict by ~estimator.predict~
 By evaluating our classifier performance on data that has been seen during
 training, we could get false confidence in the predictive power of our model. In
 the worst case, it may simply memorize the training samples but completely fails
@@ -155,40 +163,45 @@ print(np.sum(pred_y == test_y) / float(len(test_y)))
 
 #+RESULTS:
 :RESULTS:
-# Out[101]:
+# Out[47]:
 :END:
 
+*** plotting correctly labeled data, and incorrectly labeled data
 We can also visualize the correct and failed predictions
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-print('Samples correctly classified:')
-correct_idx = np.where(pred_y == test_y)[0]
-print(correct_idx)
+  print('Samples correctly classified:')
+  correct_idx = np.where(pred_y == test_y)[0] #<- return the correctly predicted row indices
+  print(correct_idx)
 
-print('\nSamples incorrectly classified:')
-incorrect_idx = np.where(pred_y != test_y)[0]
-print(incorrect_idx)
-# Plot two dimensions
+  print('\nSamples incorrectly classified:')
+  incorrect_idx = np.where(pred_y != test_y)[0] #<- return the incorrectly predicted row indices
+  print(incorrect_idx)
 
-colors = ["darkblue", "darkgreen", "gray"]
+  # Plot two dimensions
+  colors = ["darkblue", "darkgreen", "gray"]
 
-for n, color in enumerate(colors):
-    idx = np.where(test_y == n)[0]
-    plt.scatter(test_X[idx, 1], test_X[idx, 2], color=color, label="Class %s" % str(n))
+  # plot correctly labeled data with different color
+  for n, color in enumerate(colors):
+      idx = np.where(test_y == n)[0] # get the indices of rows with certain label
+      plt.scatter(test_X[idx, 1], test_X[idx, 2], color=color, label="Class %s" % str(n))
 
-plt.scatter(test_X[incorrect_idx, 1], test_X[incorrect_idx, 2], color="darkred")
+  # plot incorrectly labeled data with dark red
+  # - for incorrect_idx rows get the data of label '1'
+  # - for incorrect_idx rows get the data of label '2'
+  plt.scatter(test_X[incorrect_idx, 1], test_X[incorrect_idx, 2], color="darkred")
 
-plt.xlabel('sepal width [cm]')
-plt.ylabel('petal length [cm]')
-plt.legend(loc=3)
-plt.title("Iris Classification results")
-plt.show()
+  plt.xlabel('sepal width [cm]')
+  plt.ylabel('petal length [cm]')
+  plt.legend(loc=3)
+  plt.title("Iris Classification results")
+  plt.show()
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[102]:
-[[file:./obipy-resources/1942bZJ.png]]
+# Out[62]:
+[[file:./obipy-resources/250412xI.png]]
 :END:
 
 We can see that the errors occur in the area where green (class 1) and gray
@@ -196,9 +209,188 @@ We can see that the errors occur in the area where green (class 1) and gray
 feature which helps separate class 1 and class 2 should improve classifier
 performance.
 
-
+* Exercise                                                         :EXERCISE:
 EXERCISE: Print the true labels of 3 wrong predictions and modify the
 scatterplot code, which we used above, to visualize and distinguish these three
 samples with different markers in the 2D scatterplot. Can you explain why our
 classifier made these wrong predictions?
 # %load solutions/04_wrong-predictions.py
+
+* Misc tools
+** Scikit-learn
+*** train_test_split(X,y,test_size=0.5, train_size=0.5, stratify=y)
+    [[*non-stratify][non-stratify]]
+    [[*stratify][stratify]]
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.linear_model import LogisticRegression
+    5. from sklearn.neighbors import KNeighborsClassifier
+    #+END_QUOTE
+** Numpy
+*** np.where(condition, x, y)
+    Return elements, *either from x or y, depending on condition*.
+
+    *If only condition is given, return ~condition.nonzero()~.*
+
+**** eg1. choose elements, given ~condition, x, y~                :TECHCOMBO:
+    where( how_to_choose, x, y )
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      np.where([[True, False], [True, True]],
+               [[1, 2], [3, 4]],
+               [[9, 8], [7, 6]])
+
+      # return:
+      # array([[1, 8],
+      #        [3, 4]])
+
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[49]:
+    #+BEGIN_EXAMPLE
+      array([[1, 8],
+      [3, 4]])
+    #+END_EXAMPLE
+    :END:
+
+    #+BEGIN_QUOTE
+    .
+    . True means comming from 1st
+    . False means comming from 2nd
+    .
+    . which array to choose for the same location
+    . [[True, False], [True, True]]                    1st: [[1, 2], [3, 4]]
+    .    ^      ^       ^      ^                              ✓       ✓  ✓
+    .    |      |       |      |
+    .   1st    2nd     1st    1st                      2nd: [[9, 8], [7, 6]]
+    .                                                            ✓
+    .
+    .             ===>          [[1, 8],[3, 4]]
+    .
+    #+END_QUOTE
+
+**** eg2. fill with default value, given ~condition, x, y~        :TECHCOMBO:
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      x = np.arange(9.).reshape(3, 3)
+      # [[ 0.  1.  2.]
+      #  [ 3.  4.  5.]
+      #  [ 6.  7.  8.]]
+
+      np.where(x < 5, x, -1)               # Note: broadcasting.
+      # array([[ 0.,  1.,  2.],
+      #        [ 3.,  4., -1.],
+      #        [-1., -1., -1.]])
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[60]:
+    #+BEGIN_EXAMPLE
+      array([[ 0.,  1.,  2.],
+      [ 3.,  4., -1.],
+      [-1., -1., -1.]])
+    #+END_EXAMPLE
+    :END:
+
+**** eg3. return nonzero, given only ~condition~                  :TECHCOMBO:
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      # <- only given condition, so this will return np.nonzero(arr)
+      arr = np.array([[0, 1],[1, 0]])
+      nonz = np.where(arr)
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    0 - 54918791-5f6d-4269-bdeb-d8b05651576f
+    :END:
+**** eg4. using as filtering, given only ~condition~              :TECHCOMBO:
+     #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+       np.where( x > 5 )
+       # (array([2, 2, 2]), array([0, 1, 2]))
+
+       x[np.where( x > 5 )]               # Note: result is 1D.
+       # array([ 4.,  5.,  6.,  7.,  8.])
+
+     #+END_SRC
+
+*** np.nonzero(ndarray)
+    Return the *indices* in the manner of tuple of array of the elements that
+    are non-zero.
+
+    Returns a tuple of arrays, one for each dimension of a, containing the
+    indices of the non-zero elements in that dimension.
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      x = np.array([[1,0,0], [0,2,0], [1,1,0]])
+      np.nonzero(x)
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[54]:
+    : (array([0, 1, 2, 2]), array([0, 1, 0, 1]))
+    :END:
+
+    #+BEGIN_QUOTE
+    .
+    . |       | 0 col | 1 col | 2 col |
+    . |-------+-------+-------+-------|
+    . | 0 row |     1 |     0 |     0 |
+    . | 1 row |     0 |     2 |     0 |
+    . | 2 row |     1 |     1 |     0 |
+    .
+    . indices of non zero:
+    .           (0, 0)
+    .           (1, 1)
+    .           (2, 0)
+    .           (2, 1)
+    .            ^  ^
+    .            |  +--- [0, 1, 0, 1]
+    .  [0, 1, 2, 2]
+    .
+    #+END_QUOTE
+
+*** ndarray + nonzero/where => x[np.nonzero(x)]                   :TECHCOMBO:
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      x = np.array([[1,0,0], [0,2,0], [1,1,0]])
+      x[np.nonzero(x)]               # Note: result is 1D.
+    #+END_SRC
+
+    #+RESULTS:
+    :RESULTS:
+    # Out[57]:
+    : array([1, 2, 1, 1])
+    :END:
+
+    #+BEGIN_QUOTE
+    .
+    .   nonzero ---> dimension_num-tuple of ndarray
+    .
+    . x:
+    . |       | 0 col | 1 col | 2 col |
+    . |-------+-------+-------+-------|
+    . | 0 row | ✓ 1   | 0     |     0 |
+    . | 1 row | 0     | ✓ 2   |     0 |
+    . | 2 row | ✓ 1   | ✓ 1   |     0 |
+    .
+    . indices of non zero:
+    .           (0, 0)
+    .           (1, 1)
+    .           (2, 0)
+    .           (2, 1)
+    .            ^  ^
+    .            |  |
+    . [0, 1, 2, 2]  [0, 1, 0, 1]
+    . -------------------------------
+    . ([0,1,2,2], [0,1,0,1])
+    .
+    .
+    .  x[np.nonzero(x)] = [1,2,1,1]
+    .
+    #+END_QUOTE

@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 :END:
 
 * Parameter selection, Validation, and Testing
+** bias variance tradeoff
 Most models have parameters that influence how complex a model they can learn.
 Remember using KNeighborsRegressor. If we change the number of neighbors we
 consider, we get a smoother and smoother prediction:
@@ -22,38 +23,50 @@ consider, we get a smoother and smoother prediction:
 
 file:figures/plot_kneigbors_regularization.png
 
-In the above figure, we see fits for three different values of n_neighbors. For
-n_neighbors=2, the data is overfit, the model is too flexible and can adjust too
-much to the noise in the training data. For n_neighbors=20, the model is not
-flexible enough, and can not model the variation in the data appropriately.
+In the above figure, we see fits for three different values of n_neighbors:
 
-In the middle, for n_neighbors = 5, we have found a good mid-point. It fits the
+ - For n_neighbors=2, the data is overfit, the model is too flexible and can
+   adjust too much to the noise in the training data.
+
+ - For n_neighbors=20, the model is not flexible enough, and can not model the
+   variation in the data appropriately.
+
+ - For n_neighbors = 5, we have found a good mid-point. It fits the
 data fairly well, and does not suffer from the overfit or underfit problems seen
-in the figures on either side. What we would like is a way to quantitatively
-identify overfit and underfit, and optimize the hyperparameters (in this case,
-the polynomial degree d) in order to determine the best algorithm.
+in the figures on either side.
 
-We trade off remembering too much about the particularities and noise of the
-training data vs. not modeling enough of the variability. This is a trade-off
-that needs to be made in basically every machine learning application and is a
-central concept, called bias-variance-tradeoff or "overfitting vs underfitting".
+
+What we would like is *a way to quantitatively identify overfit and underfit*,
+and optimize the hyperparameters (in this case, the polynomial degree d) in
+order to determine the best algorithm.
+
+We trade off between:
+
+ - remembering too much about the particularities and noise of the training data
+ - not modeling enough of the variability.
+
+This is a trade-off that needs to be made in basically every machine learning
+application and is a central concept, called *bias-variance-tradeoff* or
+"overfitting vs underfitting".
 
 
 file:figures/overfitting_underfitting_cartoon.png
 ​
 ** Hyperparameters, Over-fitting, and Under-fitting
+
 Unfortunately, there is no general rule how to find the sweet spot, and so
 machine learning practitioners have to find the best trade-off of
-model-complexity and generalization by trying several hyperparameter settings.
+*model-complexity* and *generalization* by *trying* several *hyperparameter*
+settings.
+
 Hyperparameters are the internal knobs or tuning parameters of a machine
 learning algorithm (in contrast to model parameters that the algorithm learns
 from the training data -- for example, the weight coefficients of a linear
-regression model); the number of k in K-nearest neighbors is such a
-hyperparameter.
+regression model); the number of *k in K-nearest neighbors* is such a
+*hyperparameter*.
 
-Most commonly this "hyperparameter tuning" is done using a brute force search,
-for example over multiple values of n_neighbors:
-
+Most commonly this "*hyperparameter tuning*" is done using a *brute force
+search*, for example over multiple values of n_neighbors:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import cross_val_score, KFold
@@ -73,13 +86,12 @@ for n_neighbors in [1, 3, 5, 10, 20]:
 
 #+RESULTS:
 :RESULTS:
-# Out[122]:
+# Out[366]:
 :END:
 
-There is a function in scikit-learn, called validation_plot to reproduce the
+There is a function in scikit-learn, called *validation_plot* to reproduce the
 cartoon figure above. It plots one parameter, such as the number of neighbors,
 against training and validation error (using cross-validation):
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import validation_curve
@@ -97,16 +109,15 @@ plt.legend(loc="best");
 
 #+RESULTS:
 :RESULTS:
-# Out[123]:
-[[file:./obipy-resources/8573fGl.png]]
+# Out[367]:
+[[file:./obipy-resources/25041Ejv.png]]
 :END:
 
 Note that many neighbors mean a "smooth" or "simple" model, so the plot uses a
 reverted x axis.
 
-If multiple parameters are important, like the parameters C and gamma in an SVM
-(more about that later), all possible combinations are tried:
-
+If multiple parameters are important, like the parameters ~C~ and ~gamma~ in an
+~SVM~ (more about that later), all *possible combinations are tried*:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import cross_val_score, KFold
@@ -116,48 +127,68 @@ for C in [0.001, 0.01, 0.1, 1, 10]:
     for gamma in [0.001, 0.01, 0.1, 1]:
         scores = cross_val_score(SVR(C=C, gamma=gamma), X, y, cv=cv)
         print("C: %f, gamma: %f, average score: %f" % (C, gamma, np.mean(scores)))
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[124]:
+0 - e4827918-798a-4252-86d4-a7aa55d50830
 :END:
 
 As this is such a very common pattern, there is a built-in class for this in
-scikit-learn, GridSearchCV. GridSearchCV takes a dictionary that describes the
+scikit-learn, ~GridSearchCV~. GridSearchCV takes a dictionary that describes the
 parameters that should be tried and a model to train.
 
-The grid of parameters is defined as a dictionary, where the keys are the
+The grid of parameters is defined as a *dictionary*, where the keys are the
 parameters and the values are the settings to be tested.
 
+#+BEGIN_QUOTE
+. GridSearchCV illustration
+.
+.            ^ C
+.            |      |      |      |      |
+.            |      |      |      |      |
+.       10   |------|------|------|------|-----
+.            |      |      |      |      |
+.            |      |      |      |      |
+.        1   |------|------|------|------|-----
+.            |      |      |      |      |
+.            |      |      |      |      |
+.      0.1   |------|------|------|------|-----
+.            |      |      |      |      |
+.            |      |      |      |      |
+.     0.01   |------|------|------|------|-----
+.            |      |      |      |      |
+.            |      |      |      |      |
+.    0.001   |------|------|------|------|-----
+.            |      |      |      |      |
+.            |      |      |      |      |
+.           -+----------------------------------> gamma
+.                0.001   0.01    0.1     1
+#+END_QUOTE
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import GridSearchCV
 param_grid = {'C': [0.001, 0.01, 0.1, 1, 10], 'gamma': [0.001, 0.01, 0.1, 1]}
 grid = GridSearchCV(SVR(), param_grid=param_grid, cv=cv, verbose=3)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[125]:
+# Out[369]:
 :END:
 
-One of the great things about GridSearchCV is that it is a meta-estimator. It
-takes an estimator like SVR above, and creates a new estimator, that behaves
-exactly the same - in this case, like a regressor. So we can call fit on it, to
-train it:
-
+One of the great things about ~GridSearchCV~ is that it is a *meta-estimator*.
+It takes an estimator like SVR above, and creates a new estimator, that behaves
+exactly the same - in this case, like a regressor. So *we can call fit on it, to
+train it*:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 grid.fit(X, y)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[126]:
+# Out[370]:
 #+BEGIN_EXAMPLE
   GridSearchCV(cv=KFold(n_splits=3, random_state=None, shuffle=True),
   error_score='raise',
@@ -165,27 +196,29 @@ grid.fit(X, y)
   kernel='rbf', max_iter=-1, shrinking=True, tol=0.001, verbose=False),
   fit_params=None, iid=True, n_jobs=1,
   param_grid={'C': [0.001, 0.01, 0.1, 1, 10], 'gamma': [0.001, 0.01, 0.1, 1]},
-  pre_dispatch='2*n_jobs', refit=True, return_train_score='warn',
+  pre_dispatch='2*n_jobs', refit=True, return_train_score=True,
   scoring=None, verbose=3)
 #+END_EXAMPLE
 :END:
 
-What fit does is a bit more involved then what we did above. First, it runs the
-same loop with cross-validation, to find the best parameter combination. Once it
-has the best combination, it runs fit again on all data passed to fit (without
-cross-validation), to built a single new model using the best parameter setting.
+What fit does is a bit more involved then what we did above.
+
+  - First, it runs the same loop with cross-validation, to find the best
+    parameter combination.
+
+  - Once it has the best combination, it runs fit again on all data passed to
+    fit (without cross-validation), to built a single new model using the best
+    parameter setting.
 
 Then, as with all models, we can use predict or score:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 grid.predict(X)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[127]:
+# Out[371]:
 #+BEGIN_EXAMPLE
   array([-1.8 , -1.74, -1.71, -1.72, -1.77, -1.85, -1.97, -2.12, -2.3 ,
   -2.49, -2.7 , -2.89, -3.07, -3.23, -3.35, -3.43, -3.45, -3.42,
@@ -197,60 +230,53 @@ grid.predict(X)
   0.77,  0.69,  0.62,  0.57,  0.56,  0.58,  0.64,  0.74,  0.87,
   1.02,  1.21,  1.4 ,  1.6 ,  1.8 ,  1.99,  2.16,  2.31,  2.42,
   2.51,  2.56,  2.58,  2.56,  2.53,  2.47,  2.39,  2.31,  2.23,
-  2.15,  2.09,  2.04,  2.  ,  1.99,  2.  ,  2.02,  2.07,  2.12,
-  2.19])
+  2.15,  2.09,  2.04,  2.  ,  1.99,  2.  ,  2.02,  2.07,  2.12,  2.19])
 #+END_EXAMPLE
 :END:
 
 You can inspect the best parameters found by GridSearchCV in the best_params_
 attribute, and the best score in the best_score_ attribute:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print(grid.best_score_)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[128]:
+# Out[372]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print(grid.best_params_)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[129]:
+# Out[373]:
 :END:
 
 But you can investigate the performance and much more for each set of parameter
-values by accessing the cv_results_ attributes. The cv_results_ attribute is a
-dictionary where each key is a string and each value is array. It can therefore
-be used to make a pandas DataFrame.
-
+values by accessing the ~cv_results_~ attributes. The ~cv_results_~ attribute is
+a dictionary where each key is a string and each value is array. It can
+therefore be used to make a pandas DataFrame.
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 type(grid.cv_results_)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[130]:
-: sklearn.utils.deprecation.DeprecationDict
+# Out[374]:
+: dict
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print(grid.cv_results_.keys())
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[131]:
+# Out[375]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -260,37 +286,36 @@ cv_results.head()
 
 cv_results_tiny = cv_results[['param_C', 'param_gamma', 'mean_test_score']]
 cv_results_tiny.sort_values(by='mean_test_score', ascending=False).head()
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[132]:
+# Out[376]:
 #+BEGIN_EXAMPLE
   param_C param_gamma  mean_test_score
-  19      10           1         0.750639
-  15       1           1         0.701184
-  14       1         0.1         0.664313
-  18      10         0.1         0.660019
-  17      10        0.01         0.623635
+  19      10           1         0.761236
+  15       1           1         0.715955
+  18      10         0.1         0.676316
+  14       1         0.1         0.675168
+  17      10        0.01         0.643706
 #+END_EXAMPLE
 :END:
 
+>>> why we need validation set: hypothesis teseting error.
 There is a problem with using this score for evaluation, however. You might be
-making what is called a multiple hypothesis testing error. If you try very many
-parameter settings, some of them will work better just by chance, and the score
-that you obtained might not reflect how your model would perform on new unseen
-data. Therefore, it is good to split off a separate test-set before performing
-grid-search. This pattern can be seen as a training-validation-test split, and
-is common in machine learning:
+making what is called a multiple *hypothesis testing error*.
 
+If you try very many parameter settings, some of them will work better just by
+chance, and the score that you obtained might not reflect how your model would
+perform on new unseen data. *Therefore, it is good to split off a separate
+test-set before performing grid-search*. This pattern can be seen as a
+*training-validation-test* split, and is common in machine learning:
 
 file:figures/grid_search_cross_validation.png
 
 We can do this very easily by splitting of some test data using
-train_test_split, training GridSearchCV on the training set, and applying the
-score method to the test set:
-
+~train_test_split~, training ~GridSearchCV~ on the *training set*, and applying
+the score method to the test set:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import train_test_split
@@ -300,26 +325,23 @@ cv = KFold(n_splits=10, shuffle=True)
 grid = GridSearchCV(SVR(), param_grid=param_grid, cv=cv)
 grid.fit(X_train, y_train)
 grid.score(X_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[133]:
+# Out[377]:
 : 0.7262035177984737
 :END:
 
 We can also look at the parameters that were selected:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 grid.best_params_
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[134]:
+# Out[378]:
 : {'C': 10, 'gamma': 1}
 :END:
 
@@ -340,29 +362,26 @@ single_split_cv = ShuffleSplit(n_splits=1)
 grid = GridSearchCV(SVR(), param_grid=param_grid, cv=single_split_cv, verbose=3)
 grid.fit(X_train, y_train)
 grid.score(X_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[135]:
-: 0.4488962867232027
+# Out[379]:
+: 0.7262035177984737
 :END:
 
 This is much faster, but might result in worse hyperparameters and therefore
 worse results.
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 clf = GridSearchCV(SVR(), param_grid=param_grid)
 clf.fit(X_train, y_train)
 clf.score(X_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[136]:
+# Out[380]:
 : 0.7262035177984737
 :END:
 
@@ -370,3 +389,40 @@ EXERCISE: Apply grid-search to find the best setting for the number of neighbors
 in KNeighborsClassifier, and apply it to the digits dataset.
 
 # %load solutions/14_grid_search.py
+
+* Misc tools
+** scikit-learn
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.model_selection import cross_val_score
+    5. from sklearn.model_selection import KFold
+    6. from sklearn.model_selection import StratifiedKFold
+    7. from sklearn.model_selection import ShuffleSplit
+    8. from sklearn.model_selection import GridSearchCV     *
+    9. from sklearn.linear_model import LogisticRegression
+    10. from sklearn.linear_model import LinearRegression
+    11. from sklearn.neighbors import KNeighborsClassifier
+    12. from sklearn.neighbors import KNeighborsRegressor
+    13. from sklearn.preprocessing import StandardScaler
+    14. from sklearn.decomposition import PCA
+    15. from sklearn.metrics import confusion_matrix, accuracy_score
+    16. from sklearn.metrics import adjusted_rand_score
+    17. from sklearn.cluster import KMeans
+    18. from sklearn.cluster import KMeans
+    19. from sklearn.cluster import MeanShift
+    20. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    21. from sklearn.cluster import AffinityPropagation
+    22. from sklearn.cluster import SpectralClustering
+    23. from sklearn.cluster import Ward
+    24. from sklearn.metrics import confusion_matrix
+    25. from sklearn.metrics import accuracy_score
+    26. from sklearn.metrics import adjusted_rand_score
+    27. from sklearn.feature_extraction import DictVectorizer
+    28. from sklearn.feature_extraction.text import CountVectorizer
+    29. from sklearn.feature_extraction.text import TfidfVectorizer
+    30. from sklearn.preprocessing import Imputer
+    31. from sklearn.dummy import DummyClassifier
+    #+END_QUOTE

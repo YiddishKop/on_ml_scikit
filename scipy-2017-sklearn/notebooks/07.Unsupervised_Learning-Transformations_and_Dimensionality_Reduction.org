@@ -15,21 +15,31 @@ import numpy as np
 :END:
 
 * Unsupervised Learning Part 1 -- Transformation
-Many instances of unsupervised learning, such as dimensionality reduction,
-manifold learning, and feature extraction, find a new representation of the
-input data without any additional input. (In contrast to supervised learning,
-usnupervised algorithms don't require or consider target variables like in the
-previous classification and regression examples).
+** instances of unsupervised learning
+Many instances of unsupervised learning, such as
+
+  - dimensionality reduction,
+  - manifold learning,
+  - feature extraction,
+
+find a new representation of the input data without any additional input.
 
 file:figures/unsupervised_workflow.png
 
+** data preprocessing: standardization
+*** what is a standardization in data preprocessing
 A very basic example is the rescaling of our data, which is a requirement for
 many machine learning algorithms as they are not scale-invariant -- rescaling
-falls into the category of data pre-processing and can barely be called
-learning. There exist many different rescaling technques, and in the following
+falls into the category of ~data pre-processing~ and can barely be called
+learning. There exist many different rescaling techniques, and in the following
 example, we will take a look at a particular method that is commonly called
-"standardization." Here, we will recale the data so that each feature is
-centered at zero (mean = 0) with unit variance (standard deviation = 0).
+"~standardization~."
+
+#+BEGIN_QUOTE
+STANDARDIZATION:
+----------------
+we will recale the data so that each feature is
+centered at zero (~mean = 0~) with unit variance (~standard deviation = 1~).
 
 For example, if we have a 1D dataset with the values [1, 2, 3, 4, 5], the standardized values are
 
@@ -41,44 +51,49 @@ For example, if we have a 1D dataset with the values [1, 2, 3, 4, 5], the standa
 
 computed via the equation $x_{standardized} = \frac{x - \mu_x}{\sigma_x}$ ,
 where μ is the sample mean, and σ the standard deviation, respectively.
+#+END_QUOTE
 
-
+*** ordinary way of standardization
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-ary = np.array([1, 2, 3, 4, 5])
-ary_standardized = (ary - ary.mean()) / ary.std()
-ary_standardized
+  ary = np.array([1, 2, 3, 4, 5])
+  ary_standardized = (ary - ary.mean()) / ary.std()
+  ary_standardized, ary_standardized.mean(), ary_standardized.std()
 
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[16]:
-: array([-1.41421356, -0.70710678,  0.        ,  0.70710678,  1.41421356])
+# Out[92]:
+#+BEGIN_EXAMPLE
+  (array([-1.41421356, -0.70710678,  0.        ,  0.70710678,  1.41421356]),
+  0.0,
+  0.99999999999999989)
+#+END_EXAMPLE
 :END:
 
+** intro to ~sklearn.preprocessing.StandardScaler~ class
 Although standardization is a most basic preprocessing procedure -- as we've
-seen in the code snipped above -- scikit-learn implements a StandardScaler class
+seen in the code snipped above -- scikit-learn implements a ~StandardScaler class~
 for this computation. And in later sections, we will see why and when the
 scikit-learn interface comes in handy over the code snippet we executed above.
 
+*** same API with ML model
 Applying such a preprocessing has a very similar interface to the supervised
-learning algorithms we saw so far. To get some more practice with scikit-learn's
-"Transformer" interface, let's start by loading the iris dataset and rescale it:
-
+learning algorithms we saw so far. To get some more practice with ~scikit-learn's
+"Transformer" interface~, let's start by loading the iris dataset and rescale it:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
   from sklearn.datasets import load_iris
   from sklearn.model_selection import train_test_split
-  ​
-  iris = load_iris()
+
+  iris = load_iris() #<- return a Bunch obj, essentially a dict
   X_train, X_test, y_train, y_test = train_test_split(iris.data, iris.target, random_state=0)
   print(X_train.shape)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-0 - ad0d09d5-893c-4640-a280-fb150af43b9a
+# Out[95]:
 :END:
 
 The iris dataset is not "centered" that is it has non-zero mean and the standard
@@ -87,17 +102,16 @@ deviation is different for each component:
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print("mean : %s " % X_train.mean(axis=0))
 print("standard deviation : %s " % X_train.std(axis=0))
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[21]:
+# Out[96]:
 :END:
 
+*** creating
 To use a preprocessing method, we first import the estimator, here
 StandardScaler and instantiate it:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.preprocessing import StandardScaler
@@ -107,64 +121,60 @@ scaler = StandardScaler()
 
 #+RESULTS:
 :RESULTS:
-# Out[22]:
+# Out[98]:
 :END:
 
-As with the classification and regression algorithms, we call fit to learn the
-model from the data. As this is an unsupervised model, we only pass X, not y.
-This simply estimates mean and standard deviation.
-
-
+*** fitting
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 scaler.fit(X_train)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[23]:
+# Out[99]:
 : StandardScaler(copy=True, with_mean=True, with_std=True)
 :END:
 
-Now we can rescale our data by applying the transform (not predict) method:
-
+*** transformation
+Now we can rescale our data by applying the ~transform~ (not predict) method:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-X_train_scaled = scaler.transform(X_train)
-
+  X_train_scaled = scaler.transform(X_train) #<- get a ndarray
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[24]:
+# Out[100]:
 :END:
 
 X_train_scaled has the same number of samples and features, but the mean was
 subtracted and all features were scaled to have unit standard deviation:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 print(X_train_scaled.shape)
 
-print("mean : %s " % X_train_scaled.mean(axis=0))
+print("mean : %s " % X_train_scaled.mean(axis=0)) # <- axis = 0 means accumulating vertically
 print("standard deviation : %s " % X_train_scaled.std(axis=0))
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[25]:
+# Out[102]:
 :END:
 
-To summarize: Via the fit method, the estimator is fitted to the data we
-provide. In this step, the estimator estimates the parameters from the data
-(here: mean and standard deviation). Then, if we transform data, these
-parameters are used to transform a dataset. (Please note that the transform
-method does not update these parameters).
+To summarize:
 
-It's important to note that the same transformation is applied to the training
-and the test set. That has the consequence that usually the mean of the test
-data is not zero after scaling:
+Via the ~fit~ method, the estimator is fitted to the data we provide. In this
+step, the estimator estimates the parameters from the data (here: mean and
+standard deviation).
 
+Then, if we ~transform~ data, these parameters are used to transform a dataset.
+(Please note that the transform method does not update these parameters).
+
+*** training/testing data should transform in the same way
+It's important to note that *the same transformation is applied to the training
+and the test set*. *That has the consequence that usually the mean of the test
+data is not zero after scaling*:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_test_scaled = scaler.transform(X_test)
@@ -174,29 +184,32 @@ print("mean test data: %s" % X_test_scaled.mean(axis=0))
 
 #+RESULTS:
 :RESULTS:
-# Out[26]:
+# Out[103]:
 :END:
 
 It is important for the training and test data to be transformed in exactly the
 same way, for the following processing steps to make sense of the data, as is
 illustrated in the figure below:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from figures import plot_relative_scaling
 plot_relative_scaling()
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[27]:
-[[file:./obipy-resources/8573eFe.png]]
+# Out[104]:
+[[file:./obipy-resources/25041DDD.png]]
 :END:
 
+*** other data preprocessing
+    - StandardScaler
+    - MinMaxScaler
+    - etc.
+
 There are several common ways to scale the data. The most common one is the
-StandardScaler we just introduced, but rescaling the data to a fix minimum an
-maximum value with MinMaxScaler (usually between 0 and 1), or using more robust
+~StandardScaler~ we just introduced, but rescaling the data to a fix minimum an
+maximum value with ~MinMaxScaler~ (usually between 0 and 1), or using more robust
 statistics like median and quantile, instead of mean and standard deviation
 (with RobustScaler), are also useful.
 
@@ -208,31 +221,70 @@ plot_scaling()
 
 #+RESULTS:
 :RESULTS:
-# Out[28]:
-[[file:./obipy-resources/8573rPk.png]]
+# Out[105]:
+[[file:./obipy-resources/25041QNJ.png]]
 :END:
 
-** Principal Component Analysis
-An unsupervised transformation that is somewhat more interesting is Principal
-Component Analysis (PCA). It is a technique to reduce the dimensionality of the
-data, by creating a linear projection. That is, we find new features to
-represent the data that are a linear combination of the old data (i.e. we rotate
-it). Thus, we can think of PCA as a projection of our data onto a new feature
-space.
+*** compare API of ML model with API of standardization
+As with the classification and regression algorithms, we call ~fit~ to learn the
+model from the data. As this is an unsupervised model, we ~only pass X, not y~.
+This simply estimates mean and standard deviation.
 
+#+BEGIN_QUOTE
+X: training dataset; y: training datset labels; new_X: testing dataset or new data
+
+For ~prediction model~:
+- create:
+  ~estimator = [estimator]()~,
+  eg: estimator = LinearRegression, LogisticRegression, etc
+- fitting:
+  supervised model : ~[estimator].fit(X,y)~
+  unsupervised model : ~[estimator].fit(X)~
+- predict:
+  ~[estimator].predict(new_X)~
+
+For ~standardization model~:
+- create:
+  ~scaler = StandardScaler()~
+- fitting:
+  ~scaler.fit(X)~
+- transformation:
+  ~scaler.transform(X)~
+#+END_QUOTE
+
+** PCA
+*** target of PCA: dimension reduce
+An unsupervised transformation that is somewhat more interesting is Principal
+Component Analysis (PCA). It is a technique to *reduce the dimensionality* of the
+data, by creating a:
+
+*** essential of PCA: rotating to new direction
+#+BEGIN_QUOTE
+*linear projection*.
+
+That is, we find new features to represent the data that are a *linear*
+*combination* of the old data (i.e. we *rotate* it).
+#+END_QUOTE
+
+Thus, we can think of *PCA as a projection of our data onto a new feature
+space*.
+
+*** recipe of PCA:
 The way PCA finds these new directions is by looking for the directions of
-maximum variance. Usually only few components that explain most of the variance
-in the data are kept. Here, the premise is to reduce the size (dimensionality)
-of a dataset while capturing most of its information. There are many reason why
-dimensionality reduction can be useful: It can reduce the computational cost
-when running learning algorithms, decrease the storage space, and may help with
-the so-called "curse of dimensionality," which we will discuss in greater detail
-later.
+*maximum variance*. Usually only few components that explain most of the variance
+in the data are kept.
+
+Here, the premise is to reduce the size (dimensionality) of a dataset while
+capturing most of its information. There are many reason why dimensionality
+reduction can be useful:
+
+- It can reduce the computational cost when running learning algorithms,
+- decrease the storage space,
+- may help with the so-called "curse of dimensionality".
 
 To illustrate how a rotation might look like, we first show it on
-two-dimensional data and keep both principal components. Here is an
+*two*-dimensional data and keep *both* principal components. Here is an
 illustration:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from figures import plot_pca_illustration
@@ -242,83 +294,119 @@ plot_pca_illustration()
 
 #+RESULTS:
 :RESULTS:
-# Out[29]:
-[[file:./obipy-resources/85734Zq.png]]
+# Out[106]:
+[[file:./obipy-resources/25041dXP.png]]
 :END:
 
+**** generate data points: a rotated Gaussian data points by linear transformation on original data points
 Now let's go through all the steps in more detail: We create a Gaussian blob that is rotated:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-rnd = np.random.RandomState(5)
-X_ = rnd.normal(size=(300, 2))
-X_blob = np.dot(X_, rnd.normal(size=(2, 2))) + rnd.normal(size=2)
-y = X_[:, 0] > 0
-plt.scatter(X_blob[:, 0], X_blob[:, 1], c=y, linewidths=0, s=30)
-plt.xlabel("feature 1")
-plt.ylabel("feature 2");
+  rnd = np.random.RandomState(5)
+  X_ = rnd.normal(size=(300, 2))
+  ''' (300,2) dot (2,2) + (2,) = (300,2)
+   points . Matrix + vector ===> rotated points
+
+          | (x,y)
+          | (x,y)
+          | (x,y)
+          | (x,y)
+          | (x,y)
+   (300,2)| (x,y)  300 points           * Matrix + vector
+          | (x,y)  of original  -----> linear combination      =  points of rotated
+          | (x,y)  axes                (linear transformation)    axes
+          | ...
+          | (x,y)
+          | (x,y)
+
+  '''
+  X_blob = np.dot(X_, rnd.normal(size=(2, 2))) + rnd.normal(size=2)
+  y = X_[:, 0] > 0 # create a array of boolean as condition of color
+  plt.scatter(X_blob[:, 0],
+              X_blob[:, 1],
+              c=y, # pass an array of boolean will give different color
+                   # to different condition-satisfied points.
+              linewidths=0, s=30)
+
+  plt.xlabel("feature 1")
+  plt.ylabel("feature 2");
 
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[30]:
-[[file:./obipy-resources/8573Fkw.png]]
+# Out[143]:
+[[file:./obipy-resources/25041usl.png]]
 :END:
 
+**** creating
 As always, we instantiate our PCA model. By default all directions are kept.
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.decomposition import PCA
-pca = PCA()
+  from sklearn.decomposition import PCA
+
+  # n_components : int, float, None or string
+  # Number of components to keep. if n_components is not set all components are kept
+  pca = PCA()
+  # pca = PCA(n_components=1)
 
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[31]:
+# Out[147]:
 :END:
 
+**** fitting
 Then we fit the PCA model with our data. As PCA is an unsupervised algorithm,
 there is no output y.
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 pca.fit(X_blob)
-
+print(X_blob.shape)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[32]:
-#+BEGIN_EXAMPLE
-  PCA(copy=True, iterated_power='auto', n_components=None, random_state=None,
-  svd_solver='auto', tol=0.0, whiten=False)
-#+END_EXAMPLE
+# Out[148]:
 :END:
 
-Then we can transform the data, projected on the principal components:
+**** transformation
+     ~pca.transform(X_blob)~ will find the best(2nd best, 3rd best, 4th best,
+     etc) direction along which data points(of original axes) will have the
+     max(2nd max, 3rd max, 4th max, etc) variance. The number of directions pca
+     will keep specify by the parameter of pca: ~n_components~
+     #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+       #<- projection all data points to one line
+       pca = PCA(n_components=1).fit(X_blob)
+       #<- projection all data points to one plane
+       #   with two axes are the best and 2nd best direction found by pca
+       pca = PCA(n_components=2).fit(X_blob)
 
+     #+END_SRC
+
+
+
+Note that, shape of X_blob will change to (300,1) after execute this src-block, you should rerun
+two src-block above before rerun this one.
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-X_pca = pca.transform(X_blob)
-​
-plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
-plt.xlabel("first principal component")
-plt.ylabel("second principal component");
+  X_pca = pca.transform(X_blob)
+  plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y, linewidths=0, s=30)
+  plt.xlabel("first principal component")
+  plt.ylabel("second principal component");
 
-pca = PCA(n_components=1).fit(X_blob)
-
-X_blob.shape
-
-pca.transform(X_blob).shape
-
+  # n_components : int, float, None or string
+  # Number of components to keep. if n_components is not set all components are kept
+  pca = PCA(n_components=1).fit(X_blob)
+  X_blob.shape, pca.transform(X_blob).shape
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-0 - cf46b9aa-7a78-4de6-af07-61156f6db4ae
+# Out[149]:
+: ((300, 2), (300, 1))
+[[file:./obipy-resources/25041IBy.png]]
 :END:
 
 On the left of the plot you can see the four points that were on the top right
@@ -328,9 +416,8 @@ always at right angles ("orthogonal") to each other.
 
 ** Dimensionality Reduction for Visualization with PCA
 Consider the digits dataset. It cannot be visualized in a single 2D plot, as it
-has 64 features. We are going to extract 2 dimensions to visualize it in, using
-the example from the sklearn examples here
-
+has *64 features(dimensions)*. We are going to extract *2 features(dimensions)
+to visualize* it in, using the example from the sklearn examples here
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from figures import digits_plot
@@ -344,12 +431,91 @@ digits_plot()
 [[file:./obipy-resources/8573Su2.png]]
 :END:
 
-​ Note that this projection was determined without any information about the
+Note that this projection was determined without any information about the
 labels (represented by the colors): this is the sense in which the learning is
 unsupervised. Nevertheless, we see that the projection gives us insight into the
 distribution of the different digits in parameter space.
 
+* EXERCISE
 EXERCISE: Visualize the iris dataset using the first two principal components,
 and compare this visualization to using two of the original features.
 
 # %load solutions/07A_iris-pca.py
+
+* Misc tools
+** Scikit-learn
+
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import load_iris
+    3. from sklearn.model_selection import train_test_split
+    4. from sklearn.linear_model import LogisticRegression
+    5. from sklearn.linear_model import LinearRegression
+    6. from sklearn.neighbors import KNeighborsClassifier
+    7. from sklearn.neighbors import KNeighborsRegressor
+    8. from sklearn.preprocessing import StandardScaler
+    9. from sklearn.decomposition import PCA
+    #+END_QUOTE
+*** ML fn by this note
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+      plt.scatter(X_blob[:, 0],
+                  X_blob[:, 1],
+                  c=y, # pass an array of boolean will give different color
+                       # to different condition-satisfied points.
+                  linewidths=0, s=30)
+
+    #+END_SRC
+
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  from sklearn.decomposition import PCA
+  pca = PCA(n_components=2)
+    #+END_SRC
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  pca.fit(X_blob)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  X_pca = pca.transform(X_blob)
+#+END_SRC
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  plt.scatter(X_pca[:, 0], X_pca[:, 1])
+#+END_SRC
+** Matplotlib
+
+*** plot function with parameter ~c = array of boolean/01~
+Give different colors for data points who satisfy different conditions.
+
+#+NAME: pass boolean array to 'c'
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+import matplotlib.pyplot as plt
+import numpy as np
+X = np.array([1,2,3,4,5,6])
+y = np.array([4,5,6,7,8,9])
+plt.scatter(X,y,c=y>5) # <- here pass an array of boolean to 'c' --- color parameter
+plt.show()
+#+END_SRC
+
+#+RESULTS: pass boolean array to 'c'
+:RESULTS:
+# Out[201]:
+[[file:./obipy-resources/25041vCJ.png]]
+:END:
+
+#+NAME: pass 01 array to 'c'
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+import matplotlib.pyplot as plt
+import numpy as np
+X = np.array([1,2,3,4,5,6])
+y = np.array([4,5,6,7,8,9])
+plt.scatter(X,y,c=y%2) # <- here pass an array of '01' to 'c' --- color parameter
+plt.show()
+#+END_SRC
+
+#+RESULTS: pass 01 array to 'c'
+:RESULTS:
+# Out[202]:
+[[file:./obipy-resources/250418MP.png]]
+:END:
