@@ -10,24 +10,28 @@ import numpy as np
 
 * Automatic Feature Selection
 Often we collected many features that might be related to a supervised
-prediction task, but we don't know which of them are actually predictive. To
-improve interpretability, and sometimes also generalization performance, we can
-use automatic feature selection to select a subset of the original features.
+prediction task, but we don't know which of them are actually predictive.
+
+To improve interpretability, and sometimes also generalization performance, we
+can use *automatic feature selection* to select a subset of the original
+features.
+
 There are several types of feature selection methods available, which we'll
 explain in order of increasing complexity.
 
 For a given supervised model, the best feature selection strategy would be to
-try out each possible subset of the features, and evaluate generalization
-performance using this subset. However, there are exponentially many subsets of
-features, so this exhaustive search is generally infeasible. The strategies
+*try out each possible subset of the features*, and *evaluate generalization
+performance using this subset*. However, there are *exponentially* many subsets
+of features, so this exhaustive search is generally infeasible. The strategies
 discussed below can be thought of as proxies for this infeasible computation.
 
 ** Univariate statistics
-The simplest method to select features is using univariate statistics, that is
+The simplest method to select features is using *univariate statistics*, that is
 by looking at each feature individually and running a statistical test to see
-whether it is related to the target. This kind of test is also known as analysis
-of variance (ANOVA).
+whether it is related to the target. This kind of test is also known as
+*analysis of variance (ANOVA)*.
 
+*** add noise feature to each sample
 We create a synthetic dataset that consists of the breast cancer data with an
 additional 50 completely random features.
 
@@ -41,22 +45,21 @@ rng = np.random.RandomState(42)
 noise = rng.normal(size=(len(cancer.data), 50))
 # add noise features to the data
 # the first 30 features are from the dataset, the next 50 are noise
-X_w_noise = np.hstack([cancer.data, noise])
+X_w_noise = np.hstack([cancer.data, noise]) #<- add feature to each sample
 X_train, X_test, y_train, y_test = train_test_split(X_w_noise, cancer.target,
                                                     random_state=0, test_size=.5)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[193]:
+# Out[55]:
 :END:
 
-We have to define a threshold on the p-value of the statistical test to decide
+*** do feature selection directly by ~SelectPercentile~
+We have to define a *threshold* on the p-value of the statistical test to decide
 how many features to keep. There are several strategies implemented in
-scikit-learn, a straight-forward one being SelectPercentile, which selects a
-percentile of the original features (we select 50% below):
-
+scikit-learn, a straight-forward one being ~SelectPercentile~, which selects a
+~percentile of the original features~ (we select 50% below):
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_selection import SelectPercentile
@@ -67,79 +70,75 @@ select.fit(X_train, y_train)
 X_train_selected = select.transform(X_train)
 print(X_train.shape)
 print(X_train_selected.shape)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[194]:
+# Out[60]:
 :END:
 
+*** find best features: do F-test to see informativeness of each feature by ~f_classif~
 We can also use the test statistic directly to see how relevant each feature is.
-As the breast cancer dataset is a classification task, we use f_classif, the
-F-test for classification. Below we plot the p-values associated with each of
+As the breast cancer dataset is a classification task, we use ~f_classif~, the
+*F-test* for classification. Below we plot the p-values associated with each of
 the 80 features (30 original features + 50 noise features). Low p-values
 indicate informative features.
 
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
   from sklearn.feature_selection import f_classif, f_regression, chi2
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[195]:
+# Out[56]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
   F, p = f_classif(X_train, y_train)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[196]:
+# Out[57]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
   plt.figure()
   plt.plot(p, 'o')
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[197]:
-: [<matplotlib.lines.Line2D at 0x7f1ae8e1b8d0>]
-[[file:./obipy-resources/8573gOg.png]]
+# Out[58]:
+: [<matplotlib.lines.Line2D at 0x7ff4f6c39a90>]
+[[file:./obipy-resources/31993eW.png]]
 :END:
 
 Clearly most of the first 30 features have very small p-values.
 
-Going back to the SelectPercentile transformer, we can obtain the features that
+*** find best features: using ~select_percentile_obj.get_support()~
+Going back to the ~SelectPercentile~ transformer, we can obtain the features that
 are selected using the get_support method:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 mask = select.get_support()
 print(mask)
 # visualize the mask. black is True, white is False
 plt.matshow(mask.reshape(1, -1), cmap='gray_r')
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[198]:
-: <matplotlib.image.AxesImage at 0x7f1ae8bb6828>
-[[file:./obipy-resources/8573tYm.png]]
+# Out[61]:
+: <matplotlib.image.AxesImage at 0x7ff4f6b40710>
+[[file:./obipy-resources/3199Epc.png]]
 :END:
 
+*** keep only the best features: by ~select_percentile_obj.transform(test_data)~
 Nearly all of the original 30 features were recovered. We can also analize the
 utility of the feature selection by training a supervised model on the data.
-It's important to learn the feature selection only on the training set!
-
+*It's important to learn the feature selection only on the training set*!
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.linear_model import LogisticRegression
@@ -150,92 +149,134 @@ lr.fit(X_train, y_train)
 print("Score with all features: %f" % lr.score(X_test, y_test))
 lr.fit(X_train_selected, y_train)
 print("Score with only selected features: %f" % lr.score(X_test_selected, y_test))
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[199]:
+# Out[62]:
 :END:
 
-** Model-based Feature Selection
-A somewhat more sophisticated method for feature selection is using a supervised
-machine learning model and selecting features based on how important they were
-deemed by the model. This requires the model to provide some way to rank the
-features by importance. This can be done for all tree-based models (which
-implement get_feature_importances) and all linear models, for which the
-coefficients can be used to determine how much influence a feature has on the
-outcome.
+** Model-based Feature Selection by tree-based model and linear model
+A somewhat more sophisticated method for feature selection is using a
+*supervised machine learning model* and *selecting features based on how
+important they were deemed by the model*.
 
-Any of these models can be made into a transformer that does feature selection
-by wrapping it with the SelectFromModel class:
+This requires the model to provide some way to *rank the features by
+importance*. This can be done for :
 
+1. all *tree-based models* (which implement ~get_feature_importances~)
+2. all *linear models*, for which the *coefficients* can be used to determine
+   how much influence a feature has on the outcome.
 
+Any of these models can be made into a ~transformer~ that does feature selection
+by wrapping it with the ~SelectFromModel~ class:
+
+*** feature selection by tree-based model as ~SelectFromModel~
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_selection import SelectFromModel
 from sklearn.ensemble import RandomForestClassifier
 select = SelectFromModel(RandomForestClassifier(n_estimators=100, random_state=42), threshold="median")
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[200]:
+# Out[63]:
 :END:
+
+**** fit and transform
+ - do fit(train_data) to convert obj to model
+ - do transform(train_data) to keep only important features and return a new feature_selected dataset
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-select.fit(X_train, y_train)
-X_train_rf = select.transform(X_train)
-print(X_train.shape)
-print(X_train_rf.shape)
-
+  select.fit(X_train, y_train) #<- this select is not the SelectPercentile obj,
+                               #but the SelectFromModel obj
+  X_train_rf = select.transform(X_train) #<- feature selection
+                                         # only keep the important features
+  print(X_train.shape)
+  print(X_train_rf.shape)
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[201]:
+# Out[64]:
 :END:
 
+**** see the selected status by ~get_support()~
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-mask = select.get_support()
-# visualize the mask. black is True, white is False
-plt.matshow(mask.reshape(1, -1), cmap='gray_r')
+  mask = select.get_support() #<- return a boolean ndarray same shape with
+                              #original data sample visualize the mask. black is
+                              #True, white is False
+  plt.matshow(mask.reshape(1, -1), cmap='gray_r')
 
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[202]:
-: <matplotlib.image.AxesImage at 0x7f1ae8d2a588>
-[[file:./obipy-resources/85736is.png]]
+# Out[65]:
+: <matplotlib.image.AxesImage at 0x7ff4f6c25898>
+[[file:./obipy-resources/3199e9o.png]]
 :END:
 
+**** only use selected features of test dataset and check the score
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_test_rf = select.transform(X_test)
 LogisticRegression().fit(X_train_rf, y_train).score(X_test_rf, y_test)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[203]:
+# Out[66]:
 : 0.9508771929824561
 :END:
 
 This method builds a single model (in this case a random forest) and uses the
-feature importances from this model. We can do a somewhat more elaborate search
-by training multiple models on subsets of the data. One particular strategy is
-recursive feature elimination:
+*feature importances* from this model. We can do a somewhat more elaborate
+search by training multiple models on subsets of the data. One particular
+strategy is recursive feature elimination.
 
 ** Recursive Feature Elimination
 Recursive feature elimination builds a model on the full set of features, and
 similar to the method above selects a subset of features that are deemed most
-important by the model. However, usually only a single feature is dropped from
-the dataset, and a new model is built with the remaining features. The process
-of dropping features and model building is repeated until there are only a
-pre-specified number of features left:
+important by the model.
 
+However, usually only *a single feature is dropped from the dataset, and a new
+model is built with the remaining features*. The process of dropping features
+and model building is repeated until there are only a *pre-specified number* of
+features left:
 
+TODO
+- 30 feature -> drop 1 -> 29 feature -> build a new model
+- 30 feature -> drop 1 -> 29 feature -> build a new model
+
+** The general steps of feature selection for model based and RFE
+
+#+BEGIN_QUOTE
+    _Hint_:
+    1. here a 'model' means somthing after fitting, 'obj' means somthing before
+       fitting;
+    2. use RFE as example, replace with SelectFromModel freely.
+    3. you can refine the train_data
+
+    STEPS:
+    1. build RFE obj:
+       1. Same with using ~SelectFromModel~, you must pass a model obj(before
+          fitting) as parameter. Here you must pass a model obj to ~RFE~.
+       2. And specify the number of feature left by setting
+          ~n_features_to_select~.
+    2. build RFE model:
+       1. RFE_obj.fit(train_data, train_label)
+    3. visualize the selected features:
+       1. RFE_model.get_support() # return you a boolean matrix
+       2. matshow this reshaped(if needed) matrix
+    4. build selected_feature dataset --- keep only important features:
+       1. RFE_model.transform(train_data or test_data) ==> return refined dataset
+    5. use selected features to train and test:
+       1. ml_model.fit(refined train_data or test_data)
+    6. evaluate the score of ml model using selected features
+       1. RFE_model.score(refined train_data or test_data, train_label or test_label)
+
+#+END_QUOTE
+*** build a RFE model and visualize selected features
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.feature_selection import RFE
 select = RFE(RandomForestClassifier(n_estimators=100, random_state=42), n_features_to_select=40)
@@ -243,7 +284,6 @@ select.fit(X_train, y_train)
 # visualize the selected features:
 mask = select.get_support()
 plt.matshow(mask.reshape(1, -1), cmap='gray_r')
-
 #+END_SRC
 
 #+RESULTS:
@@ -253,11 +293,11 @@ plt.matshow(mask.reshape(1, -1), cmap='gray_r')
 [[file:./obipy-resources/8573Hty.png]]
 :END:
 
+*** build selected_feature dataset and use it to train ml_model
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 X_train_rfe = select.transform(X_train)
 X_test_rfe = select.transform(X_test)
 LogisticRegression().fit(X_train_rfe, y_train).score(X_test_rfe, y_test)
-
 #+END_SRC
 
 #+RESULTS:
@@ -266,9 +306,9 @@ LogisticRegression().fit(X_train_rfe, y_train).score(X_test_rfe, y_test)
 : 0.9508771929824561
 :END:
 
+*** evaluate score
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 select.score(X_test, y_test)
-
 #+END_SRC
 
 #+RESULTS:
@@ -277,6 +317,7 @@ select.score(X_test, y_test)
 : 0.9508771929824561
 :END:
 
+* Exericse
 EXERCISE: Create the "XOR" dataset as in the first cell below: Add random
 features to it and compare how univariate selection compares to model based
 selection using a Random Forest in recovering the original features.
@@ -293,9 +334,66 @@ plt.scatter(X[:, 0], X[:, 1], c=plt.cm.spectral(y.astype(float)))
 
 #+RESULTS:
 :RESULTS:
-# Out[207]:
-: <matplotlib.collections.PathCollection at 0x7f1ae9129cc0>
-[[file:./obipy-resources/857352B.png]]
+# Out[67]:
+: <matplotlib.collections.PathCollection at 0x7ff4f6b91630>
+[[file:./obipy-resources/3199rHv.png]]
 :END:
 
 # %load solutions/19_univariate_vs_mb_selection.py
+* Misc tools
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import make_regression
+    3. from sklearn.datasets import load_iris
+    4. from sklearn.datasets import load_digits
+    5. from sklearn.datasets import load_breast_cancer  *
+    6. from sklearn.model_selection import train_test_split
+    7. from sklearn.model_selection import cross_val_score
+    8. from sklearn.model_selection import KFold
+    9. from sklearn.model_selection import StratifiedKFold
+    10. from sklearn.model_selection import ShuffleSplit
+    11. from sklearn.model_selection import GridSearchCV
+    12. from sklearn.model_selection import learning_curve
+    13. from sklearn.feature_extraction import DictVectorizer
+    14. from sklearn.feature_extraction.text import CountVectorizer
+    15. from sklearn.feature_extraction.text import TfidfVectorizer
+    16. from sklearn.feature_selection import SelectPercentile *
+    17. from sklearn.feature_selection import f_classif *
+    18. from sklearn.feature_selection import f_regression *
+    19. from sklearn.feature_selection import chi2 *
+    20. from sklearn.feature_selection import SelectFromModel *
+    21. from sklearn.feature_selection import RFE *
+    22. from sklearn.linear_model import LogisticRegression
+    23. from sklearn.linear_model import LinearRegression
+    24. from sklearn.linear_model import Ridge
+    25. from sklearn.linear_model import Lasso
+    26. from sklearn.linear_model import ElasticNet
+    27. from sklearn.neighbors import KNeighborsClassifier
+    28. from sklearn.neighbors import KNeighborsRegressor
+    29. from sklearn.preprocessing import StandardScaler
+    30. from sklearn.decomposition import PCA
+    31. from sklearn.metrics import confusion_matrix, accuracy_score
+    32. from sklearn.metrics import adjusted_rand_score
+    33. from sklearn.metrics.scorer import SCORERS
+    34. from sklearn.metrics import r2_score
+    35. from sklearn.cluster import KMeans
+    36. from sklearn.cluster import KMeans
+    37. from sklearn.cluster import MeanShift
+    38. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    39. from sklearn.cluster import AffinityPropagation
+    40. from sklearn.cluster import SpectralClustering
+    41. from sklearn.cluster import Ward
+    42. from sklearn.metrics import confusion_matrix
+    43. from sklearn.metrics import accuracy_score
+    44. from sklearn.metrics import adjusted_rand_score
+    45. from sklearn.metrics import classification_report
+    46. from sklearn.preprocessing import Imputer
+    47. from sklearn.dummy import DummyClassifier
+    48. from sklearn.pipeline import make_pipeline
+    49. from sklearn.svm import LinearSVC
+    50. from sklearn.svm import SVC
+    51. from sklearn.tree import DecisionTreeRegressor
+    52. from sklearn.ensemble import RandomForestClassifier
+    53. from sklearn.ensemble import GradientBoostingRegressor
+    #+END_QUOTE

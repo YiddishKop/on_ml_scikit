@@ -460,7 +460,7 @@ Actually, we can also add new axis by ~reshape~
   print (y)
 #+END_SRC
 *** ndarray.ravel()
-    Used to flattern the ndarray. It is equivalent to ~reshape(-1, order=order)~.
+    Used to *flattern* the ndarray. It is equivalent to ~reshape(-1, order=order)~.
 
     >>> x = np.array([[1, 2, 3], [4, 5, 6]])
     >>> print(np.ravel(x))

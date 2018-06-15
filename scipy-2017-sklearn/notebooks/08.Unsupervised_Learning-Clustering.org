@@ -258,6 +258,7 @@ import numpy as np
     2. *spherical* variance.
     3. *balanced* sized blobs
 
+    Summarizing: short-commings of K-means:
     #+BEGIN_QUOTE
     So we have 4 short-comings of K-means:
     1. Incorrect number of clusters <<< solved by elbow-method

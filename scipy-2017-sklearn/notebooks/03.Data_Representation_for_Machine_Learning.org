@@ -432,6 +432,8 @@
 *** np.bincount(ndarray)
     ~np.bincount~ is some like the ~groupby(_).count()~ in scala.
 
+    return number of elements of each bin
+
     It group the elements of ndarray by their own values, then count number of
     elements in each group.
 
@@ -444,7 +446,7 @@
 
     #+RESULTS:
     :RESULTS:
-    # Out[77]:
+    # Out[5]:
     :END:
 
 ** Scipy

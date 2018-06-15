@@ -105,6 +105,8 @@ the scenes, exactly the same as above is happening.
 
 
 *** 2. using pipeline on model selection
+
+**** contamination way
 Building pipelines not only simplifies the code, it is also *important for model
 selection*. Say we want to *grid-search* ~C~ to tune our Logistic Regression
 above.
@@ -138,7 +140,7 @@ grid.fit(X_train, y_train)
 #+END_EXAMPLE
 :END:
 
->>> What did we do wrong?
+**** why is this wrong
 
 It see some folds in X_train which will be testing fold in future
 
@@ -147,7 +149,59 @@ applying ~TfidfVectorizer~, it *saw all of the X_train, not only the training
 folds*! So it could use knowledge of the frequency of the words in the
 test-folds. This is called "*contamination*" of the test set, and leads to too
 optimistic estimates of generalization performance, or badly selected
-parameters. We can fix this with the pipeline, though:
+parameters.
+
+for example:
+   #+BEGIN_QUOTE
+   eg.
+   1: 'I have a dream',
+   2: 'I love you',
+   3: 'I shall do what I can',
+   #+END_QUOTE
+   we only take 1-gram and 1/3 testing data propotion:
+   |       | Training Data[1,2] | fold1 training Data[1] | fold2 training Data[2] |
+   |-------+--------------------+------------------------+------------------------|
+   | I     |                  2 |                      1 |                    1   |
+   | have  |                  1 |                      1 |                    0   |
+   | a     |                  1 |                      1 |                    0   |
+   | dream |                  1 |                      1 |                    0   |
+   | love  |                  1 |                      0 |                    1   |
+   | you   |                  1 |                      0 |                    1   |
+   | shall |                  0 |                      0 |                    0   |
+   | do    |                  0 |                      0 |                    0   |
+   | what  |                  0 |                      0 |                    0   |
+   | can   |                  0 |                      0 |                    0   |
+
+   In grid search cv, we don't want all X_train data, we just need a iteration
+of splitting training on dataset to get differernt folds each time,
+
+file:figures/cross_validation.png
+
+
+**** fix it by using ~pipeline~
+The training data of TfidfVectorizer should match with the training data on
+classifier, If we do TfidfVectorizer on whole training dataset, it will lead
+word frequency miss-match when it passed to classifier. So we should do:
+
+#+BEGIN_QUOTE
+1. for each fold_permutation in training data:
+   .... do TfidfVectorizer on training part of this fold_permutation to get vect_data
+   .... compute 'C' and score of classifier on vect_data return from above
+   compare and return the best 'C'
+
+Note that: we can compose the 2 steps in for-loop by ~pipeline~.
+#+END_QUOTE
+
+instead of
+
+#+BEGIN_QUOTE
+1. do TfidfVectorizer on whole trainning data to get vect_data
+2. for each fold_permutation in vect_data:
+   .... compute 'C' and score of classifier on training part of this fold_permutation
+   compare and return the best 'C'
+#+END_QUOTE
+
+we can use ~~pipeline~ to combine TfidfVectorizer and LogisticRegression:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.model_selection import GridSearchCV
@@ -165,13 +219,13 @@ grid.score(text_test, y_test)
 : 0.98493543758967006
 :END:
 
->>> ~__~ symbol
+**** the important symbol ~__~
 Related to ~'logisticregression__C': [.1, 1, 10, 100]~, note that for we need to
 tell the pipeline where at which step we wanted to set the parameter ~C~. We can
 do this using the special '__' syntax.
 
-- The name before the '__' is simply the name of the class,
-- The part after '__' is the parameter we want to set with grid-search.
+- The name before the '__' is simply the *name of the class*,
+- The part after '__' is the *parameter* we want to set with grid-search.
 
 
 file:figures/pipeline_cross_validation.png

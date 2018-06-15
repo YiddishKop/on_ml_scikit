@@ -16,129 +16,146 @@ import numpy as np
 :END:
 
 * Manifold Learning
-One weakness of PCA is that it cannot detect non-linear features. A set of
-algorithms known as Manifold Learning have been developed to address this
-deficiency. A canonical dataset used in Manifold learning is the S-curve:
+** PCA vs. Manifold learning
+*** weakness of PCA
+ One weakness of PCA is that it *cannot detect non-linear features*. A set of
+ algorithms known as *Manifold Learning* have been developed to address this
+ deficiency. A canonical dataset used in *Manifold learning* is the *S-curve*:
 
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ from sklearn.datasets import make_s_curve
+ X, y = make_s_curve(n_samples=1000)
+ from mpl_toolkits.mplot3d import Axes3D
+ ax = plt.axes(projection='3d')
+ ax.scatter3D(X[:, 0], X[:, 1], X[:, 2], c=y)
+ ax.view_init(10, -60);
+ #+END_SRC
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.datasets import make_s_curve
-X, y = make_s_curve(n_samples=1000)
-from mpl_toolkits.mplot3d import Axes3D
-ax = plt.axes(projection='3d')
-ax.scatter3D(X[:, 0], X[:, 1], X[:, 2], c=y)
-ax.view_init(10, -60);
+ #+RESULTS:
+ :RESULTS:
+ # Out[74]:
+ [[file:./obipy-resources/3199fTM.png]]
+ :END:
 
-#+END_SRC
+ This is a 2-dimensional dataset embedded in three dimensions, but it is embedded
+ in such a way that PCA cannot discover the underlying data orientation:
 
-#+RESULTS:
-:RESULTS:
-# Out[216]:
-[[file:./obipy-resources/8573gcI.png]]
-:END:
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ from sklearn.decomposition import PCA
+ X_pca = PCA(n_components=2).fit_transform(X)
+ plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y);
+ #+END_SRC
 
-This is a 2-dimensional dataset embedded in three dimensions, but it is embedded
-in such a way that PCA cannot discover the underlying data orientation:
+ #+RESULTS:
+ :RESULTS:
+ # Out[75]:
+ [[file:./obipy-resources/3199sdS.png]]
+ :END:
 
+*** Manifold learning: overcome PCA
+ Manifold learning algorithms, however, available in the ~sklearn.manifold~
+ submodule, are able to recover the underlying 2-dimensional manifold:
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.decomposition import PCA
-X_pca = PCA(n_components=2).fit_transform(X)
-plt.scatter(X_pca[:, 0], X_pca[:, 1], c=y);
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ from sklearn.manifold import Isomap
+ iso = Isomap(n_neighbors=15, n_components=2)
+ X_iso = iso.fit_transform(X)
+ plt.scatter(X_iso[:, 0], X_iso[:, 1], c=y);
+ #+END_SRC
 
-#+END_SRC
+ #+RESULTS:
+ :RESULTS:
+ # Out[76]:
+ [[file:./obipy-resources/31995nY.png]]
+ :END:
 
-#+RESULTS:
-:RESULTS:
-# Out[217]:
-[[file:./obipy-resources/8573tmO.png]]
-:END:
+** Manifold learning on the digits data
 
-Manifold learning algorithms, however, available in the sklearn.manifold
-submodule, are able to recover the underlying 2-dimensional manifold:
-
-
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.manifold import Isomap
-iso = Isomap(n_neighbors=15, n_components=2)
-X_iso = iso.fit_transform(X)
-plt.scatter(X_iso[:, 0], X_iso[:, 1], c=y);
-
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[218]:
-[[file:./obipy-resources/85736wU.png]]
-:END:
-
-* Manifold learning on the digits data
+*** preview the digit image
 We can apply manifold learning techniques to much higher dimensional datasets,
 for example the digits data that we saw before:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.datasets import load_digits
-digits = load_digits()
-fig, axes = plt.subplots(2, 5, figsize=(10, 5),
-                         subplot_kw={'xticks':(), 'yticks': ()})
-for ax, img in zip(axes.ravel(), digits.images):
-    ax.imshow(img, interpolation="none", cmap="gray")
-
+  from sklearn.datasets import load_digits
+  digits = load_digits()
+  fig, axes = plt.subplots(2, 5, figsize=(10, 5),
+                           subplot_kw={'xticks':(), 'yticks': ()})
+  for ax, img in zip(axes.ravel(), digits.images):
+      ax.imshow(img, interpolation="none", cmap="gray")
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[219]:
-[[file:./obipy-resources/8573H7a.png]]
+# Out[88]:
+[[file:./obipy-resources/31996hr.png]]
 :END:
+
+
+*** visualize all digit images after pca mapping
+
+    #+BEGIN_QUOTE
+    8*8
+........
+........
+........              1*1
+........  ----pca----> .  ----> draw as one point on 2d image to see
+........                        whether or not we can separate different digits
+........
+........
+........
+    #+END_QUOTE
 
 We can visualize the dataset using a linear technique, such as PCA. We saw this
 already provides some intuition about the data:
 
-
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-# build a PCA model
-pca = PCA(n_components=2)
-pca.fit(digits.data)
-# transform the digits data onto the first two principal components
-digits_pca = pca.transform(digits.data)
-colors = ["#476A2A", "#7851B8", "#BD3430", "#4A2D4E", "#875525",
-          "#A83683", "#4E655E", "#853541", "#3A3120","#535D8E"]
-plt.figure(figsize=(10, 10))
-plt.xlim(digits_pca[:, 0].min(), digits_pca[:, 0].max() + 1)
-plt.ylim(digits_pca[:, 1].min(), digits_pca[:, 1].max() + 1)
-for i in range(len(digits.data)):
-    # actually plot the digits as text instead of using scatter
-    plt.text(digits_pca[i, 0], digits_pca[i, 1], str(digits.target[i]),
-             color = colors[digits.target[i]],
-             fontdict={'weight': 'bold', 'size': 9})
-plt.xlabel("first principal component")
-plt.ylabel("second principal component");
+  # build a PCA model
+  pca = PCA(n_components=2)
+  pca.fit(digits.data)
+  # transform the digits data onto the first two principal components
+  digits_pca = pca.transform(digits.data)
+  # setup 10 colors, each color for each digit from 0 ~ 9
+  colors = ["#476A2A", "#7851B8", "#BD3430", "#4A2D4E", "#875525",
+            "#A83683", "#4E655E", "#853541", "#3A3120","#535D8E"]
+  # setup figsize, x,y limitation
+  plt.figure(figsize=(10, 10))
+  plt.xlim(digits_pca[:, 0].min(), digits_pca[:, 0].max() + 1)
+  plt.ylim(digits_pca[:, 1].min(), digits_pca[:, 1].max() + 1)
 
+  # using pca mapping result of each digit image smaple as index;
+  # using label of each digit image as text you want to draw.
+  for i in range(len(digits.data)):
+      # actually plot the digits as text instead of using scatter
+      plt.text(digits_pca[i, 0],                 #<- the x-axis given by model pca
+               digits_pca[i, 1],                 #<- the y-axis given by model pca
+               str(digits.target[i]),            #<- the digit we want to draw
+               color = colors[digits.target[i]], #<- use the true label(0~9) as index of colors array
+               fontdict={'weight': 'bold', 'size': 9}
+      )
+  plt.xlabel("first principal component")
+  plt.ylabel("second principal component");
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[220]:
-[[file:./obipy-resources/8573UFh.png]]
+# Out[89]:
+[[file:./obipy-resources/3199Hsx.png]]
 :END:
 
+*** visualize all digit images after T-SNE mapping
 Using a more powerful, nonlinear techinque can provide much better
-visualizations, though. Here, we are using the t-SNE manifold learning method:
-
+visualizations, though. Here, we are using the *t-SNE* manifold learning method:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.manifold import TSNE
 tsne = TSNE(random_state=42)
 # use fit_transform instead of fit, as TSNE has no transform method:
 digits_tsne = tsne.fit_transform(digits.data)
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[222]:
+# Out[90]:
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -155,39 +172,89 @@ digits_tsne = tsne.fit_transform(digits.data)
   X_pca = PCA(n_components=2).fit_transform(X)
   iso = Isomap(n_neighbors=15, n_components=2)
   X_iso = iso.fit_transform(X)
+
   # build a PCA model
   pca = PCA(n_components=2)
   pca.fit(digits.data)
+
   # transform the digits data onto the first two principal components
   digits_pca = pca.transform(digits.data)
   colors = ["#476A2A", "#7851B8", "#BD3430", "#4A2D4E", "#875525",
             "#A83683", "#4E655E", "#853541", "#3A3120","#535D8E"]
+
+  # build a TSNE obj
   tsne = TSNE(random_state=42)
+
   # use fit_transform instead of fit, as TSNE has no transform method:
+  # get 2d data points after tsne mapping
   digits_tsne = tsne.fit_transform(digits.data)
+
+  # set figsize, x,y limitation
   plt.figure(figsize=(10, 10))
   plt.xlim(digits_tsne[:, 0].min(), digits_tsne[:, 0].max() + 1)
   plt.ylim(digits_tsne[:, 1].min(), digits_tsne[:, 1].max() + 1)
+
+  # using tsne mapping result of each digit image smaple as index;
+  # using label of each digit image as text you want to draw.
   for i in range(len(digits.data)):
-      # actually plot the digits as text instead of using scatter
-      plt.text(digits_tsne[i, 0], digits_tsne[i, 1], str(digits.target[i]),
-               color = colors[digits.target[i]],
+      plt.text(digits_tsne[i, 0],                #<- the x-axis given by model tsne
+               digits_tsne[i, 1],                #<- the y-axis given by model tsne
+               str(digits.target[i]),            #<- the digit we want to draw
+               color = colors[digits.target[i]], #<- use the true label(0~9) as index of colors array
                fontdict={'weight': 'bold', 'size': 9})
   plt.show()
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[226]:
-[[file:./obipy-resources/8573J20.png]]
+# Out[91]:
+[[file:./obipy-resources/3199HIC.png]]
 :END:
 
-t-SNE has a somewhat longer runtime that other manifold learning algorithms, but
-the result is quite striking. Keep in mind that this algorithm is purely
+t-SNE has a somewhat *longer runtime* that other manifold learning algorithms, but
+the *result is quite striking*. Keep in mind that this algorithm is purely
 unsupervised, and does not know about the class labels. Still it is able to
 separate the classes very well (though the classes four, one and nine have been
 split into multiple groups).
 
+*** general steps to do clustering and visualize by pca or tsne
+    Here, just use PCA as example to show
+    #+BEGIN_QUOTE
+    model
+    ---------------------------
+    1. build a PCA model,
+       1. build obj: pca_obj = PCA()
+       2. obj -> model: pca = pca_obj.fit(X_train)
+
+    transform
+    ---------------------------
+    1. transform the digits by PCA
+       1. pca_data = pca.transform(X_train)
+
+    setup plot attr
+    ---------------------------
+    2. setup 10 colors, each color for each digit from 0 ~ 9
+       1. colors = ['', '', ..., '']
+    3. setup figsize, x,y limitation
+       1. plt.figure(figsize=(10,10))
+
+    draw digits
+    ---------------------------
+    1. using pca mapping result of each digit image smaple as index; using label
+       of each digit image as text you want to draw: for i in len(digits.data()): plt.text(....
+       1. the x-axis given by model pca
+          - pca_data[:,0]
+       2. the y-axis given by model pca
+          - pca_data[:,1]
+       3. the digit we want to draw
+          - str = digits.target[i]
+       4. use the true label(0~9) as index of colors array
+          - c = colors[digits.target[i]]
+
+    #+END_QUOTE
+
+
+* Exercise
 EXERCISE:
  - Compare the results of applying isomap to the digits dataset to the results
    of PCA and t-SNE. Which result do you think looks best?
@@ -199,3 +266,90 @@ EXERCISE:
 # %load solutions/21A_isomap_digits.py
 
 # %load solutions/21B_tsne_classification.py
+
+* Misc tools
+** scikit-learn
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import make_moons
+    3. from sklearn.datasets import make_circles
+    4. from sklearn.datasets import make_s_curve *
+    5. from mpl_toolkits.mplot3d import Axes3D *
+    6. from sklearn.datasets import make_regression
+    7. from sklearn.datasets import load_iris
+    8. from sklearn.datasets import load_digits
+    9. from sklearn.datasets import load_breast_cancer
+    10. from sklearn.model_selection import train_test_split
+    11. from sklearn.model_selection import cross_val_score
+    12. from sklearn.model_selection import KFold
+    13. from sklearn.model_selection import StratifiedKFold
+    14. from sklearn.model_selection import ShuffleSplit
+    15. from sklearn.model_selection import GridSearchCV
+    16. from sklearn.model_selection import learning_curve
+    17. from sklearn.feature_extraction import DictVectorizer
+    18. from sklearn.feature_extraction.text import CountVectorizer
+    19. from sklearn.feature_extraction.text import TfidfVectorizer
+    20. from sklearn.feature_selection import SelectPercentile
+    21. from sklearn.feature_selection import f_classif
+    22. from sklearn.feature_selection import f_regression
+    23. from sklearn.feature_selection import chi2
+    24. from sklearn.feature_selection import SelectFromModel
+    25. from sklearn.feature_selection import RFE
+    26. from sklearn.linear_model import LogisticRegression
+    27. from sklearn.linear_model import LinearRegression
+    28. from sklearn.linear_model import Ridge
+    29. from sklearn.linear_model import Lasso
+    30. from sklearn.linear_model import ElasticNet
+    31. from sklearn.neighbors import KNeighborsClassifier
+    32. from sklearn.neighbors import KNeighborsRegressor
+    33. from sklearn.preprocessing import StandardScaler
+    34. from sklearn.metrics import confusion_matrix, accuracy_score
+    35. from sklearn.metrics import adjusted_rand_score
+    36. from sklearn.metrics.scorer import SCORERS
+    37. from sklearn.metrics import r2_score
+    38. from sklearn.cluster import KMeans
+    39. from sklearn.cluster import KMeans
+    40. from sklearn.cluster import MeanShift
+    41. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    42. from sklearn.cluster import AffinityPropagation
+    43. from sklearn.cluster import SpectralClustering
+    44. from sklearn.cluster import Ward
+    45. from sklearn.cluster import DBSCAN
+    46. from sklearn.cluster import AgglomerativeClustering
+    47. from scipy.cluster.hierarchy import linkage
+    48. from scipy.cluster.hierarchy import dendrogram
+    49. from sklearn.metrics import confusion_matrix
+    50. from sklearn.metrics import accuracy_score
+    51. from sklearn.metrics import adjusted_rand_score
+    52. from sklearn.metrics import classification_report
+    53. from sklearn.preprocessing import Imputer
+    54. from sklearn.dummy import DummyClassifier
+    55. from sklearn.pipeline import make_pipeline
+    56. from sklearn.svm import LinearSVC
+    57. from sklearn.svm import SVC
+    58. from sklearn.tree import DecisionTreeRegressor
+    59. from sklearn.ensemble import RandomForestClassifier
+    60. from sklearn.ensemble import GradientBoostingRegressor
+    61. from sklearn.decomposition import PCA *
+    62. from sklearn.manifold import TSNE  *
+    63. from sklearn.manifold import Isomap  *
+    #+END_QUOTE
+
+** Matplotlib
+*** module by now
+    #+BEGIN_QUOTE
+     from mpl_toolkits.mplot3d import Axes3D *
+    #+END_QUOTE
+
+* code snippet
+** how to draw one digt in one subplot
+
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+  from sklearn.datasets import load_digits
+  digits = load_digits()
+  fig, axes = plt.subplots(2, 5, figsize=(10, 5),
+                           subplot_kw={'xticks':(), 'yticks': ()})
+  for ax, img in zip(axes.ravel(), digits.images):
+      ax.imshow(img, interpolation="none", cmap="gray")
+#+END_SRC

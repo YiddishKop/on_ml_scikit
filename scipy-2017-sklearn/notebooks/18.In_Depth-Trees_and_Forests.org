@@ -3,22 +3,25 @@
 
 * In Depth - Decision Trees and Forests
 
+** Decision Tree
   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 %matplotlib inline
 import numpy as np
 import matplotlib.pyplot as plt
-
   #+END_SRC
 
   #+RESULTS:
   :RESULTS:
-  # Out[182]:
+  # Out[39]:
   :END:
 
-Here we'll explore a class of algorithms based on decision trees. Decision trees
-at their root are extremely intuitive. They encode a series of "if" and "else"
-choices, similar to how a person might make a decision. However, which questions
-to ask, and how to proceed for each answer is entirely learned from the data.
+*** what is a decision tree
+Here we'll explore a class of algorithms based on *decision trees*. Decision
+trees at their root are extremely intuitive. They encode a series of "if" and
+"else" choices, similar to how a person might make a decision.
+
+However, which questions to ask, and how to proceed for each answer is entirely
+learned from the data.
 
 For example, if you wanted to create a guide to identifying an animal found in
 nature, you might ask the following series of questions:
@@ -31,22 +34,26 @@ nature, you might ask the following series of questions:
      - two: does the animal have wings?
      - four: does the animal have a bushy tail?
 
-and so on. This binary splitting of questions is the essence of a decision tree.
+and so on. This binary splitting of questions is the *essence of a decision
+tree*.
 
-One of the main benefit of tree-based models is that they require little
-preprocessing of the data. They can work with variables of different types
-(continuous and discrete) and are invariant to scaling of the features.
+*** benefit of tree-based model.
+One of the main benefit of *tree-based* models is that:
+1. they require *little preprocessing* of the data.
+2. They can work with variables of *different types* (continuous and discrete)
+3. *invariant to scaling* of the features.
+4. *nonparametric* model.
 
-Another benefit is that tree-based models are what is called "nonparametric",
-which means they don't have a fix set of parameters to learn. Instead, a tree
-model can become more and more flexible, if given more data. In other words, the
-number of free parameters grows with the number of samples and is not fixed, as
-for example in linear models.
+   What is called "*nonparametric*", which means *they
+   don't have a fix set of parameters to learn*. Instead, a tree model can
+   become more and more flexible, if given more data. In other words, the number
+   of free parameters grows with the number of samples and is not fixed, as for
+   example in linear models.
 
-** Decision Tree Regression
+*** decision tree regression
+
 A decision tree is a simple binary classification tree that is similar to
 nearest neighbor classification. It can be used as follows:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from figures import make_dataset
@@ -56,18 +63,17 @@ plt.figure()
 plt.xlabel('Feature X')
 plt.ylabel('Target y')
 plt.scatter(X, y);
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[183]:
-[[file:./obipy-resources/8573tRy.png]]
+# Out[40]:
+[[file:./obipy-resources/3199dDW.png]]
 :END:
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.tree import DecisionTreeRegressor
-reg = DecisionTreeRegressor(max_depth=5)
+reg = DecisionTreeRegressor(max_depth=5) #<- max_depth
 reg.fit(X, y)
 X_fit = np.linspace(-3, 3, 1000).reshape((-1, 1))
 y_fit_1 = reg.predict(X_fit)
@@ -75,26 +81,27 @@ plt.figure()
 plt.plot(X_fit.ravel(), y_fit_1, color='blue', label="prediction")
 plt.plot(X.ravel(), y, '.k', label="training data")
 plt.legend(loc="best");
-
 #+END_SRC
 
 #+RESULTS:
 :RESULTS:
-# Out[184]:
-[[file:./obipy-resources/8573fbB.png]]
+# Out[41]:
+[[file:./obipy-resources/3199qNc.png]]
 :END:
 
-A single decision tree allows us to estimate the signal in a non-parametric way,
-but clearly has some issues. In some regions, the model shows high bias and
-under-fits the data. (seen in the long flat lines which don't follow the
-contours of the data), while in other regions the model shows high variance and
-over-fits the data (reflected in the narrow spikes which are influenced by noise
-in single points).
 
-* Decision Tree Classification
+*** the drawbacks of decision tree regression
+A single decision tree allows us to *estimate the signal in a non-parametric
+way*, but clearly has some issues.
+
+In some regions, the model shows *high bias* and *under-fits* the data. (seen in
+the long flat lines which don't follow the contours of the data), while in other
+regions the model shows *high variance* and *over-fits* the data (reflected in
+the narrow spikes which are influenced by noise in single points).
+
+*** decision tree classification
 Decision tree classification work very similarly, by assigning all points within
 a leaf the majority class in that leaf:
-
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from sklearn.datasets import make_blobs
@@ -114,14 +121,15 @@ plt.scatter(X_test[:, 0], X_test[:, 1], c=np.array(['b', 'r'])[y_test], s=60, ed
 
 #+RESULTS:
 :RESULTS:
-# Out[185]:
-[[file:./obipy-resources/8573slH.png]]
+# Out[42]:
+[[file:./obipy-resources/31993Xi.png]]
 :END:
 
+*** how to tune decision tree by ~max_depth~
 There are many parameter that control the complexity of a tree, but the one that
-might be easiest to understand is the maximum depth. This limits how finely the
-tree can partition the input space, or how many "if-else" questions can be asked
-before deciding which class a sample lies in.
+might be easiest to understand is the ~maximum depth~. *This limits how finely
+the tree can partition the input space*, or *how many "if-else" questions* can
+be asked before deciding which class a sample lies in.
 
 This parameter is important to tune for trees and tree-based models. The
 interactive plot below shows how underfit and overfit looks like for this model.
@@ -145,8 +153,8 @@ plot_tree_interactive()
 
 #+RESULTS:
 :RESULTS:
-# Out[186]:
-[[file:./obipy-resources/85735vN.png]]
+# Out[43]:
+[[file:./obipy-resources/3199Eio.png]]
 :END:
 
 Decision trees are fast to train, easy to understand, and often lead to
@@ -159,11 +167,13 @@ models that generalize better. The most common methods for combining trees are
 random forests and gradient boosted trees.
 
 ** Random Forests
-Random forests are simply many trees, built on different random subsets (drawn
-with replacement) of the data, and using different random subsets (drawn without
-replacement) of the features for each split. This makes the trees different from
-each other, and makes them overfit to different aspects. Then, their predictions
-are averaged, leading to a smoother estimate that overfits less.
+Random forests are simply *many trees*, built on different random subsets
+(*drawn with replacement*) of the data, and using different random subsets
+(*drawn without replacement*) of the features for each split.
+
+This makes the trees different from each other, and makes them overfit to
+different aspects. Then, their predictions are averaged, leading to a smoother
+estimate that overfits less.
 
 #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
 from figures import plot_forest_interactive
@@ -173,108 +183,165 @@ plot_forest_interactive()
 
 #+RESULTS:
 :RESULTS:
-# Out[187]:
-[[file:./obipy-resources/8573G6T.png]]
+# Out[44]:
+[[file:./obipy-resources/3199dKK.png]]
 :END:
 
-** Selecting the Optimal Estimator via Cross-Validation
+*** parallel: RandomForestClassifier
+    we can selecting the optimal estimator via Cross-Validation
 
-   #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.model_selection import GridSearchCV
-from sklearn.datasets import load_digits
-from sklearn.ensemble import RandomForestClassifier
-digits = load_digits()
-X, y = digits.data, digits.target
-X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
-rf = RandomForestClassifier(n_estimators=200)
-parameters = {'max_features':['sqrt', 'log2', 10],
-              'max_depth':[5, 7, 9]}
-clf_grid = GridSearchCV(rf, parameters, n_jobs=-1)
-clf_grid.fit(X_train, y_train)
+    #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ from sklearn.model_selection import GridSearchCV
+ from sklearn.datasets import load_digits
+ from sklearn.ensemble import RandomForestClassifier
+ digits = load_digits()
+ X, y = digits.data, digits.target
+ X_train, X_test, y_train, y_test = train_test_split(X, y, random_state=42)
+ rf = RandomForestClassifier(n_estimators=200) #<- n_estimators
+ parameters = {'max_features':['sqrt', 'log2', 10],
+               'max_depth':[5, 7, 9]}
+ clf_grid = GridSearchCV(rf, parameters, n_jobs=-1)
+ clf_grid.fit(X_train, y_train)
 
-clf_grid.score(X_train, y_train)
+ clf_grid.score(X_train, y_train)
 
-clf_grid.score(X_test, y_test)
+ clf_grid.score(X_test, y_test)
 
-   #+END_SRC
+    #+END_SRC
 
-   #+RESULTS:
-   :RESULTS:
-   # Out[188]:
-   : 0.9733333333333334
-   :END:
+    #+RESULTS:
+    :RESULTS:
+    # Out[45]:
+    : 0.9755555555555555
+    :END:
 
-** Another option: Gradient Boosting
-Another Ensemble method that can be useful is Boosting: here, rather than
-looking at 200 (say) parallel estimators, We construct a chain of 200 estimators
-which iteratively refine the results of the previous estimator. The idea is that
-by sequentially applying very fast, simple models, we can get a total model
-error which is better than any of the individual pieces.
+*** sequential: Gradient Boosting
+ Another Ensemble method that can be useful is ~Boosting~: here:
+ - rather than looking at 200 (say) parallel estimators,
+ - We construct a *chain of 200* estimators which
 
-
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.ensemble import GradientBoostingRegressor
-clf = GradientBoostingRegressor(n_estimators=100, max_depth=5, learning_rate=.2)
-clf.fit(X_train, y_train)
-print(clf.score(X_train, y_train))
-print(clf.score(X_test, y_test))
-
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[189]:
-:END:
-
-EXERCISE: Cross-validating Gradient Boosting: Use a grid search to optimize the
-learning_rate and max_depth for a Gradient Boosted Decision tree on the digits
-data set.
-
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-from sklearn.datasets import load_digits
-from sklearn.ensemble import GradientBoostingClassifier
-digits = load_digits()
-X_digits, y_digits = digits.data, digits.target
-# split the dataset, apply grid-search
-
-#+END_SRC
-
-#+RESULTS:
-:RESULTS:
-# Out[190]:
-:END:
-
-# %load solutions/18_gbc_grid.py
-
-** Feature importance
-Both RandomForest and GradientBoosting objects expose a feature_importances_
-attribute when fitted. This attribute is one of the most powerful feature of
-these models. They basically quantify how much each feature contributes to gain
-in performance in the nodes of the different trees.
+   iteratively refine the results of the previous estimator. The idea is that by
+   *sequentially applying very fast*, simple models, we can get a total model
+   error which is better than any of the individual pieces.
 
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-X, y = X_digits[y_digits < 2], y_digits[y_digits < 2]
-rf = RandomForestClassifier(n_estimators=300, n_jobs=1)
-rf.fit(X, y)
-print(rf.feature_importances_)  # one value per feature
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ from sklearn.ensemble import GradientBoostingRegressor
+ clf = GradientBoostingRegressor(n_estimators=100, max_depth=5, learning_rate=.2)
+ clf.fit(X_train, y_train)
+ print(clf.score(X_train, y_train))
+ print(clf.score(X_test, y_test))
 
-#+END_SRC
+ #+END_SRC
 
-#+RESULTS:
-:RESULTS:
-# Out[191]:
-:END:
+ #+RESULTS:
+ :RESULTS:
+ # Out[48]:
+ :END:
 
-#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
-plt.figure()
-plt.imshow(rf.feature_importances_.reshape(8, 8), cmap=plt.cm.viridis, interpolation='nearest')
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ from sklearn.datasets import load_digits
+ from sklearn.ensemble import GradientBoostingClassifier
+ digits = load_digits()
+ X_digits, y_digits = digits.data, digits.target
+ # split the dataset, apply grid-search
+ #+END_SRC
 
-#+END_SRC
+ #+RESULTS:
+ :RESULTS:
+ # Out[51]:
+ :END:
 
-#+RESULTS:
-:RESULTS:
-# Out[192]:
-: <matplotlib.image.AxesImage at 0x7f1ae90f6b00>
-[[file:./obipy-resources/8573TEa.png]]
-:END:
+
+*** The most advantages: Feature importance
+
+ Both ~RandomForest~ and ~GradientBoosting~ objects expose a
+ ~feature_importances_~ attribute when fitted.
+
+ This attribute is one of the most powerful feature of these models. They
+ basically quantify *how much each feature contributes to gain in performance*
+ in the nodes of the different trees.
+
+
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ X, y = X_digits[y_digits < 2], y_digits[y_digits < 2]
+ rf = RandomForestClassifier(n_estimators=300, n_jobs=1)
+ rf.fit(X, y)
+ print(rf.feature_importances_)  # one value per feature
+ #+END_SRC
+
+ #+RESULTS:
+ :RESULTS:
+ # Out[53]:
+ :END:
+
+ #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+ plt.figure()
+ plt.imshow(rf.feature_importances_.reshape(8, 8), cmap=plt.cm.viridis, interpolation='nearest')
+ #+END_SRC
+
+ #+RESULTS:
+ :RESULTS:
+ # Out[54]:
+ : <matplotlib.image.AxesImage at 0x7ff5068f79e8>
+ [[file:./obipy-resources/3199qUQ.png]]
+ :END:
+
+* Exercise
+** exercise 1
+ EXERCISE: Cross-validating Gradient Boosting: Use a grid search to optimize the
+ learning_rate and max_depth for a Gradient Boosted Decision tree on the digits
+ data set.
+
+ # %load solutions/18_gbc_grid.py
+
+* Misc tools
+*** ML models by now
+    #+BEGIN_QUOTE
+    1. from sklearn.datasets import make_blobs
+    2. from sklearn.datasets import make_regression
+    3. from sklearn.datasets import load_iris
+    4. from sklearn.datasets import load_digits
+    5. from sklearn.model_selection import train_test_split
+    6. from sklearn.model_selection import cross_val_score
+    7. from sklearn.model_selection import KFold
+    8. from sklearn.model_selection import StratifiedKFold
+    9. from sklearn.model_selection import ShuffleSplit
+    10. from sklearn.model_selection import GridSearchCV
+    11. from sklearn.model_selection import learning_curve
+    12. from sklearn.linear_model import LogisticRegression
+    13. from sklearn.linear_model import LinearRegression
+    14. from sklearn.linear_model import Ridge
+    15. from sklearn.linear_model import Lasso
+    16. from sklearn.linear_model import ElasticNet
+    17. from sklearn.neighbors import KNeighborsClassifier
+    18. from sklearn.neighbors import KNeighborsRegressor
+    19. from sklearn.preprocessing import StandardScaler
+    20. from sklearn.decomposition import PCA
+    21. from sklearn.metrics import confusion_matrix, accuracy_score
+    22. from sklearn.metrics import adjusted_rand_score
+    23. from sklearn.metrics.scorer import SCORERS
+    24. from sklearn.metrics import r2_score
+    25. from sklearn.cluster import KMeans
+    26. from sklearn.cluster import KMeans
+    27. from sklearn.cluster import MeanShift
+    28. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    29. from sklearn.cluster import AffinityPropagation
+    30. from sklearn.cluster import SpectralClustering
+    31. from sklearn.cluster import Ward
+    32. from sklearn.metrics import confusion_matrix
+    33. from sklearn.metrics import accuracy_score
+    34. from sklearn.metrics import adjusted_rand_score
+    35. from sklearn.metrics import classification_report
+    36. from sklearn.feature_extraction import DictVectorizer
+    37. from sklearn.feature_extraction.text import CountVectorizer
+    38. from sklearn.feature_extraction.text import TfidfVectorizer
+    39. from sklearn.preprocessing import Imputer
+    40. from sklearn.dummy import DummyClassifier
+    41. from sklearn.pipeline import make_pipeline
+    42. from sklearn.svm import LinearSVC
+    43. from sklearn.svm import SVC
+    44. from sklearn.tree import DecisionTreeRegressor *
+    45. from sklearn.ensemble import RandomForestClassifier *
+    46. from sklearn.ensemble import GradientBoostingRegressor *
+    #+END_QUOTE

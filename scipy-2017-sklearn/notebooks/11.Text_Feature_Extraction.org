@@ -14,6 +14,64 @@ import numpy as np
 :END:
 
 * Methods - Text Feature Extraction with Bag-of-Words
+  build vocabulary: fit(means building model):
+  --------------------------------------------------------
+  - obj.fit(sentence_data_base)
+#+NAME: build vocabulary_ based on sentence database
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+from sklearn.feature_extraction.text import CountVectorizer
+vectorizer = CountVectorizer(min_df=1)
+vectorizer.fit([
+    "The cat sat on the mat.",
+    "The quick brown fox jumps over the lazy dog.",
+])
+vectorizer.vocabulary_
+
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[242]:
+#+BEGIN_EXAMPLE
+  {'brown': 0,
+  'cat': 1,
+  'dog': 2,
+  'fox': 3,
+  'jumps': 4,
+  'lazy': 5,
+  'mat': 6,
+  'on': 7,
+  'over': 8,
+  'quick': 9,
+  'sat': 10,
+  'the': 11}
+#+END_EXAMPLE
+:END:
+
+  apply vocabulary: after fit(means model built finished):
+  --------------------------------------------------------
+  - model.vocabulary_ : a dict with item format *'word': num_occurence* .
+  - model.get_feature_names : like the keys of this dict
+  - model.transform : *return the train data point*, num_occurence of each word in each sample.
+
+#+NAME: use vocabulary_ based on new sentence
+#+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
+X = vectorizer.transform([
+    "The cat sat on the mat.",
+    "This cat is a nice cat.",
+]).toarray()
+print(len(vectorizer.vocabulary_))
+print(vectorizer.get_feature_names())
+print(X)
+#+END_SRC
+
+#+RESULTS:
+:RESULTS:
+# Out[243]:
+:END:
+
+
+
 >>> bag_of_words
 
 In many tasks, like in the classical spam detection, your input data is text.
