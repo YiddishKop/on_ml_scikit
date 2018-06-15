@@ -1,5 +1,8 @@
 #+TITLE: Out-of-core Learning - Large scale Text Classification for sentiment Analysis
 
+* two good post , should read in future
+https://tomaugspurger.github.io/scalable-ml-02.html
+https://tomaugspurger.github.io/scalable-ml-01.html
 
 * Scalability Issues
 The ~sklearn.feature_extraction.text.CountVectorizer~ and
