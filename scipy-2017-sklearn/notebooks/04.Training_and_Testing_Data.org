@@ -235,6 +235,33 @@ classifier made these wrong predictions?
 
     *If only condition is given, return ~condition.nonzero()~.*
 
+    这个函数返回的是一个 tuple of arrays, 指示的正好是符合 condition 的坐标.
+
+
+**** eg0. produce the index, given ~condition~
+     #+BEGIN_SRC ipython :session :exports code :async t :results raw drawer
+       x = np.arange(9.).reshape(3, 3)
+
+       # array([[0., 1., 2.],
+       #        [3., 4., 5.],
+       #        [6., 7., 8.]])
+
+       np.where(x)
+       #
+       #        dim-0 坐标                       dim-1 坐标
+       #        |                                |
+       #        v                                v
+       # (array([0, 0, 1, 1, 1, 2, 2, 2]), array([1, 2, 0, 1, 2, 0, 1, 2]))
+
+       np.where(x>5)
+       # (array([2, 2, 2]), array([0, 1, 2]))
+
+
+       x[np.where(x>5)]
+       # array([6., 7., 8.])
+
+     #+END_SRC
+
 **** eg1. choose elements, given ~condition, x, y~                :TECHCOMBO:
     where( how_to_choose, x, y )
     #+BEGIN_SRC ipython :session :exports both :async t :results raw drawer
@@ -259,8 +286,8 @@ classifier made these wrong predictions?
 
     #+BEGIN_QUOTE
     .
-    . True means comming from 1st
-    . False means comming from 2nd
+    . True means, value of this location is selected from related location of 1st ndarray
+    . False means, value of this location is selected from related location of 2nd ndarray
     .
     . which array to choose for the same location
     . [[True, False], [True, True]]                    1st: [[1, 2], [3, 4]]
@@ -314,7 +341,7 @@ classifier made these wrong predictions?
        # (array([2, 2, 2]), array([0, 1, 2]))
 
        x[np.where( x > 5 )]               # Note: result is 1D.
-       # array([ 4.,  5.,  6.,  7.,  8.])
+       # array([ 6.,  7.,  8.])
 
      #+END_SRC
 

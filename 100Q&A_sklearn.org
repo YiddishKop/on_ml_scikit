@@ -102,11 +102,6 @@ pyplot.scatter(X,y)
 pyplot.show()
 #+END_SRC
 
-
-
-
-
-
 *** How to generate dataset from a curve with some noise
     you must specify the parameter name --- 'size' when using uniform
     distribution to generate noise
