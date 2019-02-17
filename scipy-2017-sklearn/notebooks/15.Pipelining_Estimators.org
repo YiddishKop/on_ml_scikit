@@ -260,7 +260,6 @@ step, and grid-search the degree of the polynomials (try 1, 2 and 3).
 
 # %load solutions/15A_ridge_grid.py
 
-
 * Misc tools
 ** scikit-learn
 *** ML models by now

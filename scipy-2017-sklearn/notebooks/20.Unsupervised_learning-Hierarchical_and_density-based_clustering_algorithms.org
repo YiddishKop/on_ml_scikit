@@ -294,26 +294,25 @@ plt.scatter(X[:, 0], X[:, 1], c=y);
     35. from sklearn.metrics.scorer import SCORERS
     36. from sklearn.metrics import r2_score
     37. from sklearn.cluster import KMeans
-    38. from sklearn.cluster import KMeans
-    39. from sklearn.cluster import MeanShift
-    40. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
-    41. from sklearn.cluster import AffinityPropagation
-    42. from sklearn.cluster import SpectralClustering
-    43. from sklearn.cluster import Ward
-    44. from sklearn.cluster import DBSCAN  *
-    45. from sklearn.cluster import AgglomerativeClustering *
-    46. from scipy.cluster.hierarchy import linkage    *
-    47. from scipy.cluster.hierarchy import dendrogram *
-    48. from sklearn.metrics import confusion_matrix
-    49. from sklearn.metrics import accuracy_score
-    50. from sklearn.metrics import adjusted_rand_score
-    51. from sklearn.metrics import classification_report
-    52. from sklearn.preprocessing import Imputer
-    53. from sklearn.dummy import DummyClassifier
-    54. from sklearn.pipeline import make_pipeline
-    55. from sklearn.svm import LinearSVC
-    56. from sklearn.svm import SVC
-    57. from sklearn.tree import DecisionTreeRegressor
-    58. from sklearn.ensemble import RandomForestClassifier
-    59. from sklearn.ensemble import GradientBoostingRegressor
+    38. from sklearn.cluster import MeanShift
+    39. from sklearn.cluster import DBSCAN  # <<< this algorithm has related sources in [[https://github.com/YiddishKop/org-notes/blob/master/ML/TaiDa_LiHongYi_ML/LiHongYi_ML_lec12_semisuper.org][LIHONGYI's lecture-12]]
+    40. from sklearn.cluster import AffinityPropagation
+    41. from sklearn.cluster import SpectralClustering
+    42. from sklearn.cluster import Ward
+    43. from sklearn.cluster import DBSCAN  *
+    44. from sklearn.cluster import AgglomerativeClustering *
+    45. from scipy.cluster.hierarchy import linkage    *
+    46. from scipy.cluster.hierarchy import dendrogram *
+    47. from sklearn.metrics import confusion_matrix
+    48. from sklearn.metrics import accuracy_score
+    49. from sklearn.metrics import adjusted_rand_score
+    50. from sklearn.metrics import classification_report
+    51. from sklearn.preprocessing import Imputer
+    52. from sklearn.dummy import DummyClassifier
+    53. from sklearn.pipeline import make_pipeline
+    54. from sklearn.svm import LinearSVC
+    55. from sklearn.svm import SVC
+    56. from sklearn.tree import DecisionTreeRegressor
+    57. from sklearn.ensemble import RandomForestClassifier
+    58. from sklearn.ensemble import GradientBoostingRegressor
     #+END_QUOTE
